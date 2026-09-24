@@ -1,0 +1,46 @@
+# Byte-compiled / optimized files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Testing & Linting caches
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.Spotlight-V100
+.Trashes
+
+# User data & session history
+.model_usage_history.json
+
+# Scratch scripts & temporary debug artifacts
+scratch.py
+term_debug.txt
+
+# Editor & IDE settings
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# HuggingFace & MLX local model downloads / weights (if placed locally)
+models--*
+*.safetensors
+*.bin
+*.gguf

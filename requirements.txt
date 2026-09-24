@@ -1,0 +1,13 @@
+# MLX-Man Runtime Dependencies
+# Apple Silicon MLX model framework
+mlx-lm>=0.20.0
+
+# Terminal UI & formatting
+rich>=13.7.0
+questionary>=2.0.0
+
+# System & memory monitoring
+psutil>=5.9.0
+
+# Hugging Face model hub integration
+huggingface_hub>=0.23.0
