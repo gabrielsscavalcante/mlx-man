@@ -1,9 +1,20 @@
-# MLX-Man ⚡
+<p align="center">
+  <img src="assets/mlx-man-icon.png" alt="MLX-Man Icon" width="180" />
+</p>
 
-[![Platform: Apple Silicon](https://img.shields.io/badge/Platform-Apple%20Silicon%20(macOS)-black?logo=apple&style=flat-square)](https://apple.com)
-[![Framework: MLX](https://img.shields.io/badge/Engine-Apple%20MLX-blue?style=flat-square)](https://github.com/ml-explore/mlx)
-[![Python: 3.10+](https://img.shields.io/badge/Python-3.10%2B-brightgreen?style=flat-square&logo=python)](https://python.org)
-[![License: MIT](https://img.shields.io/badge/License-MIT-purple?style=flat-square)](LICENSE)
+<h1 align="center">MLX-Man ⚡</h1>
+
+<p align="center">
+  <a href="https://apple.com"><img src="https://img.shields.io/badge/Platform-Apple%20Silicon%20(macOS)-black?logo=apple&style=flat-square" alt="Platform: Apple Silicon" /></a>
+  <a href="https://github.com/ml-explore/mlx"><img src="https://img.shields.io/badge/Engine-Apple%20MLX-blue?style=flat-square" alt="Framework: MLX" /></a>
+  <a href="https://python.org"><img src="https://img.shields.io/badge/Python-3.10%2B-brightgreen?style=flat-square&logo=python" alt="Python: 3.10+" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-purple?style=flat-square" alt="License: MIT" /></a>
+</p>
+
+<p align="center">
+  <b>Your local AI manager hero for Apple Silicon Macs.</b><br>
+  <sub>Download, optimize, and run local MLX LLMs on your Mac — standalone runner, not an agent.</sub>
+</p>
 
 ```
 ███╗   ███╗ ██╗      ██╗  ██╗           ███╗   ███╗  █████╗  ███╗   ██╗
