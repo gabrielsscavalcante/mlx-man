@@ -78,7 +78,7 @@ def test_main_menu_snapshot(m1, m2, m3, m4, m5):
     )
     
     body = Group(get_banner(), Text(""), panel, Text(""), below_panel)
-    layout = build_layout(body, get_system_status_footer(), 100, 30)
+    layout = build_layout(body, get_system_status_footer(), 100, 30, shortcuts={"↑↓": "navigate", "enter": "select", "esc/q": "quit"})
     
     console.print(layout)
     assert_snapshot(console, "main_menu")
@@ -146,7 +146,7 @@ def test_ram_manager_snapshot(m1, m2, m3, m4):
     from rich import box
     panel = Panel(table, box=box.ROUNDED, border_style="bright_black", width=100, padding=(1,1))
     body = Group(header_panel, Text(""), panel)
-    layout = build_layout(body, get_system_status_footer(), 120, 30)
+    layout = build_layout(body, get_system_status_footer(), 120, 30, shortcuts={"↑↓": "navigate", "enter": "select", "esc/q": "back"})
     
     console.print(layout)
     assert_snapshot(console, "ram_manager")
@@ -259,8 +259,8 @@ def test_model_inspector_snapshot(m1, m2, m3, m4):
     panel = Panel(table, box=box.ROUNDED, border_style="bright_black", width=100, padding=(1,1))
     body = Group(header_view, Text(""), panel)
     
-    footer_text = get_system_status_footer() + "  |  [d] Download  |  [f] Filter"
-    layout = build_layout(body, footer_text, 120, 35)
+    footer_text = get_system_status_footer()
+    layout = build_layout(body, footer_text, 120, 35, shortcuts={"↑↓": "navigate", "enter": "select", "esc/q": "back", "d": "download", "f": "filter"})
     
     console.print(layout)
     assert_snapshot(console, "model_inspector")
@@ -361,8 +361,8 @@ def test_insights_snapshot(m1, m2, m3, m4):
     panel = Panel(table, box=box.ROUNDED, border_style="bright_black", width=100, padding=(1,1))
     body = Group(header_view, Text(""), panel)
     
-    footer_text = get_system_status_footer() + "  |  [Enter] Remove  |  [f] Filter"
-    layout = build_layout(body, footer_text, 120, 45)
+    footer_text = get_system_status_footer()
+    layout = build_layout(body, footer_text, 120, 45, shortcuts={"↑↓": "navigate", "enter": "select", "esc/q": "back", "f": "filter"})
     
     console.print(layout)
     assert_snapshot(console, "insights")
