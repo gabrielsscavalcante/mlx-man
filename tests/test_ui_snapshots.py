@@ -42,7 +42,7 @@ def assert_snapshot(console: Console, base_name: str):
 @patch('mlx_man.cli_dashboard.random.choice', return_value="Connect external coding tools or agents to MLX-Man's local server on port 8080")
 @patch('mlx_man.cli_dashboard.get_chip_name', return_value="Apple M-Mock")
 @patch('mlx_man.cli_dashboard.get_free_ram_gb', return_value=16.0)
-@patch('mlx_man.cli_dashboard.get_total_ram_gb', return_value=32.0)
+@patch('mlx_man.cli_dashboard.get_total_ram_gb', return_value=32)
 @patch('mlx_man.cli_dashboard.get_current_gpu_limit', return_value="24 GB")
 def test_main_menu_snapshot(m1, m2, m3, m4, m5):
     from mlx_man.cli_dashboard import get_system_status_footer
@@ -85,7 +85,7 @@ def test_main_menu_snapshot(m1, m2, m3, m4, m5):
 
 @patch('mlx_man.cli_dashboard.get_chip_name', return_value="Apple M-Mock")
 @patch('mlx_man.cli_dashboard.get_free_ram_gb', return_value=8.0)
-@patch('mlx_man.cli_dashboard.get_total_ram_gb', return_value=32.0)
+@patch('mlx_man.cli_dashboard.get_total_ram_gb', return_value=32)
 @patch('mlx_man.cli_dashboard.get_current_gpu_limit', return_value="24 GB")
 def test_ram_manager_snapshot(m1, m2, m3, m4):
     from mlx_man.cli_dashboard import get_system_status_footer
@@ -154,9 +154,11 @@ def test_ram_manager_snapshot(m1, m2, m3, m4):
 
 @patch('mlx_man.cli_dashboard.get_chip_name', return_value="Apple M-Mock")
 @patch('mlx_man.cli_dashboard.get_free_ram_gb', return_value=16.0)
-@patch('mlx_man.cli_dashboard.get_total_ram_gb', return_value=32.0)
+@patch('mlx_man.cli_dashboard.get_total_ram_gb', return_value=32)
 @patch('mlx_man.cli_dashboard.get_current_gpu_limit', return_value="24 GB")
-def test_model_inspector_snapshot(m1, m2, m3, m4):
+@patch('mlx_man.model_inspector.get_total_ram_gb', return_value=32)
+@patch('mlx_man.model_inspector.get_current_gpu_limit', return_value="24 GB")
+def test_model_inspector_snapshot(m1, m2, m3, m4, m5, m6):
     from mlx_man.cli_dashboard import get_system_status_footer
     from mlx_man.model_inspector import render_model_manager, ModelMetadata
     console = Console(width=120, height=35, record=True, force_terminal=True)
@@ -267,7 +269,7 @@ def test_model_inspector_snapshot(m1, m2, m3, m4):
 
 @patch('mlx_man.cli_dashboard.get_chip_name', return_value="Apple M-Mock")
 @patch('mlx_man.cli_dashboard.get_free_ram_gb', return_value=16.0)
-@patch('mlx_man.cli_dashboard.get_total_ram_gb', return_value=32.0)
+@patch('mlx_man.cli_dashboard.get_total_ram_gb', return_value=32)
 @patch('mlx_man.cli_dashboard.get_current_gpu_limit', return_value="24 GB")
 def test_insights_snapshot(m1, m2, m3, m4):
     from mlx_man.cli_dashboard import get_system_status_footer
