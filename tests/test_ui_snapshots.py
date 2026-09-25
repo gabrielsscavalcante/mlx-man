@@ -15,7 +15,7 @@ from mlx_man.process_service import ProcessInfo
 UPDATE_SNAPSHOTS = os.environ.get("UPDATE_SNAPSHOTS") == "1"
 
 def assert_snapshot(console: Console, base_name: str):
-    output_txt = console.export_text()
+    output_txt = console.export_text(clear=False)
     
     txt_path = os.path.join(os.path.dirname(__file__), "snapshots", f"{base_name}.txt")
     svg_path = os.path.join(os.path.dirname(__file__), "snapshots", f"{base_name}.svg")
