@@ -33,3 +33,11 @@ jobs:
     - name: Run tests
       run: |
         make test
+
+    - name: Upload UI Snapshots
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ui-snapshots-${{ matrix.python-version }}
+        path: tests/snapshots/*.svg
+        retention-days: 7

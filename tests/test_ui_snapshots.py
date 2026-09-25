@@ -1,4 +1,5 @@
 import pytest
+import os
 from unittest.mock import patch
 from rich.console import Console, Group
 from rich.panel import Panel
@@ -10,6 +11,33 @@ from mlx_man.cli_dashboard import get_banner, get_shortcuts_line, get_tip_line
 from mlx_man.main import MENU_ITEMS
 from mlx_man.ram_manager_view import get_header_group, get_process_row
 from mlx_man.process_service import ProcessInfo
+
+UPDATE_SNAPSHOTS = os.environ.get("UPDATE_SNAPSHOTS") == "1"
+
+def assert_snapshot(console: Console, base_name: str):
+    output_txt = console.export_text()
+    
+    txt_path = os.path.join(os.path.dirname(__file__), "snapshots", f"{base_name}.txt")
+    svg_path = os.path.join(os.path.dirname(__file__), "snapshots", f"{base_name}.svg")
+    
+    os.makedirs(os.path.dirname(txt_path), exist_ok=True)
+    
+    if UPDATE_SNAPSHOTS:
+        with open(txt_path, "w") as f:
+            f.write(output_txt)
+        console.save_svg(svg_path, title=base_name)
+        return
+        
+    if not os.path.exists(txt_path):
+        pytest.fail(f"Snapshot file not found: {txt_path}. Run with UPDATE_SNAPSHOTS=1 to create it.")
+        
+    with open(txt_path, "r") as f:
+        expected = f.read()
+        
+    assert output_txt == expected, f"Snapshot mismatch for {txt_path}"
+    
+    # Also save the SVG so the CI produces it as an artifact, but don't strictly assert SVG bytes
+    console.save_svg(svg_path, title=base_name)
 
 @patch('mlx_man.cli_dashboard.get_chip_name', return_value="Apple M-Mock")
 @patch('mlx_man.cli_dashboard.get_free_ram_gb', return_value=16.0)
@@ -54,15 +82,7 @@ def test_main_menu_snapshot(m1, m2, m3, m4):
     layout = build_layout(body, get_system_status_footer(), 100, 30)
     
     console.print(layout)
-    output = console.export_text()
-    
-    with open("tests/snapshot_main.txt", "w") as f:
-        f.write(output)
-        
-    assert "MLX-Man" in output
-    assert "Apple M-Mock" in output
-    assert "16.0/32.0 GB RAM" in output
-    assert "Manage Models" in output
+    assert_snapshot(console, "main_menu")
 
 @patch('mlx_man.cli_dashboard.get_chip_name', return_value="Apple M-Mock")
 @patch('mlx_man.cli_dashboard.get_free_ram_gb', return_value=8.0)
@@ -130,12 +150,5 @@ def test_ram_manager_snapshot(m1, m2, m3, m4):
     layout = build_layout(body, get_system_status_footer(), 120, 30)
     
     console.print(layout)
-    output = console.export_text()
-    
-    with open("tests/snapshot_ram.txt", "w") as f:
-        f.write(output)
-        
-    assert "Clean Up RAM" in output
-    assert "Apple M-Mock" in output
-    assert "kernel_task" in output
+    assert_snapshot(console, "ram_manager")
 

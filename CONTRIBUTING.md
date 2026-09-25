@@ -74,11 +74,8 @@ make test
 # Run with coverage
 make test-cov
 
-# Run a specific test file
-pytest tests/test_setup.py -v
-
-# Run a specific test
-pytest tests/test_cli.py::test_banner_renders_without_error -v
+# Update UI Snapshots (when changing UI components)
+UPDATE_SNAPSHOTS=1 make test
 ```
 
 ## Adding a New Model to the Registry
