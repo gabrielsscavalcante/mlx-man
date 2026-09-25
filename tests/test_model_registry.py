@@ -37,3 +37,55 @@ def test_get_all_roles():
 def test_get_registry_entry():
     assert get_registry_entry("mlx-community/QwQ-32B-4bit") is not None
     assert get_registry_entry("invalid") is None
+
+import os
+import json
+from unittest.mock import patch, MagicMock
+from mlx_man.model_registry import load_custom_models, register_custom_model, MODEL_REGISTRY, CUSTOM_MODELS_FILE
+
+@patch("os.path.exists", return_value=True)
+def test_load_custom_models(mock_exists, tmp_path):
+    custom_models = {
+        "custom/model": {"name": "Custom Model"}
+    }
+    with patch("builtins.open", MagicMock()) as mock_open:
+        handle = MagicMock()
+        handle.read.return_value = json.dumps(custom_models)
+        handle.__enter__.return_value = handle
+        mock_open.return_value = handle
+        
+        with patch("json.load", return_value=custom_models):
+            load_custom_models()
+            
+    assert "custom/model" in MODEL_REGISTRY
+    assert MODEL_REGISTRY["custom/model"]["is_custom"] is True
+    assert MODEL_REGISTRY["custom/model"]["role"] == "general"
+
+@patch("os.path.exists", return_value=True)
+def test_register_custom_model(mock_exists):
+    custom_models = {}
+    with patch("builtins.open", MagicMock()) as mock_open:
+        with patch("json.load", return_value=custom_models):
+            with patch("json.dump") as mock_dump:
+                register_custom_model("new/model", "New Model")
+                assert "new/model" in MODEL_REGISTRY
+                
+                # Check dump was called
+                mock_dump.assert_called_once()
+                args, _ = mock_dump.call_args
+                dumped_dict = args[0]
+                assert "new/model" in dumped_dict
+                assert dumped_dict["new/model"]["name"] == "New Model"
+
+@patch("os.path.exists", return_value=True)
+def test_load_custom_models_exception(mock_exists):
+    with patch("builtins.open", MagicMock()) as mock_open:
+        with patch("json.load", side_effect=Exception("error")):
+            load_custom_models()
+
+@patch("os.path.exists", return_value=True)
+def test_register_custom_model_exception(mock_exists):
+    with patch("builtins.open", MagicMock()) as mock_open:
+        with patch("json.load", side_effect=Exception("error")):
+            with patch("json.dump"):
+                register_custom_model("new", "new")

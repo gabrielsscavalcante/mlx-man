@@ -22,6 +22,7 @@ from mlx_man.cli_actions import (
     run_memory_cleaner,
     run_model_inspector,
     run_insights_history,
+    action_sync_models,
 )
 
 
@@ -33,6 +34,7 @@ MENU_ITEMS = [
     ("🧹  Clean Up RAM",         "clean"),
     ("📦  Manage Models",        "manage"),
     ("📊  Insights & History",   "insights"),
+    ("🔄  Sync Models",          "sync"),
     None,                        # visual separator
     ("⏻   Exit",                 "exit"),
 ]
@@ -69,6 +71,8 @@ def main():
                 run_model_inspector()
             elif choice == "insights":
                 run_insights_history()
+            elif choice == "sync":
+                action_sync_models()
 
     except KeyboardInterrupt:
         goodbye = True

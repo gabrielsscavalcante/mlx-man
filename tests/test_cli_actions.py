@@ -177,3 +177,76 @@ def test_action_run_server_keyboard_interrupt_server(mock_get, mock_select, mock
         with patch("mlx_man.opencode_sync.sync_opencode_config"):
             with patch("mlx_man.usage_tracker.record_usage"):
                 action_run_server()
+
+from mlx_man.cli_actions import action_sync_models
+from mlx_man.model_registry import MODEL_REGISTRY
+
+@patch("mlx_man.cli_actions.tui_select")
+def test_action_sync_models_back(mock_select):
+    mock_select.return_value = "back"
+    action_sync_models()
+    
+    mock_select.return_value = None
+    action_sync_models()
+
+@patch("mlx_man.cli_actions.tui_select")
+@patch("mlx_man.model_manager.get_installed_models")
+@patch("mlx_man.cli_actions.tui_text_input")
+def test_action_sync_models_search_empty(mock_input, mock_get, mock_select):
+    mock_select.return_value = "search"
+    mock_get.return_value = []
+    action_sync_models()
+    mock_input.assert_called_once()
+    assert "already synced" in mock_input.call_args[1]["header"].renderable
+
+@patch("mlx_man.cli_actions.tui_select")
+@patch("mlx_man.model_manager.get_installed_models")
+@patch("mlx_man.cli_actions.tui_text_input")
+@patch("mlx_man.model_registry.register_custom_model")
+@patch("mlx_man.opencode_sync.sync_opencode_config")
+def test_action_sync_models_search_found(mock_sync, mock_reg, mock_input, mock_get, mock_select):
+    mock_get.return_value = [{"id": "unregistered/model"}]
+    # First select "search", then select the model "unregistered/model"
+    mock_select.side_effect = ["search", "unregistered/model"]
+    
+    action_sync_models()
+    mock_reg.assert_called_once_with("unregistered/model", "model")
+    mock_sync.assert_called_once()
+    
+@patch("mlx_man.cli_actions.tui_select")
+@patch("mlx_man.model_manager.get_installed_models")
+def test_action_sync_models_search_back(mock_get, mock_select):
+    mock_get.return_value = [{"id": "unregistered/model"}]
+    mock_select.side_effect = ["search", "back"]
+    action_sync_models()
+    
+@patch("mlx_man.cli_actions.tui_select")
+@patch("mlx_man.cli_actions.tui_text_input")
+def test_action_sync_models_custom_empty_path(mock_input, mock_select):
+    mock_select.return_value = "custom"
+    mock_input.return_value = None
+    action_sync_models()
+    
+@patch("mlx_man.cli_actions.tui_select")
+@patch("mlx_man.cli_actions.tui_text_input")
+@patch("pathlib.Path.exists")
+def test_action_sync_models_custom_bad_path(mock_exists, mock_input, mock_select):
+    mock_select.return_value = "custom"
+    mock_input.side_effect = ["/bad/path", None]
+    mock_exists.return_value = False
+    action_sync_models()
+    assert "does not exist" in mock_input.call_args[1]["header"].renderable
+
+@patch("mlx_man.cli_actions.tui_select")
+@patch("mlx_man.cli_actions.tui_text_input")
+@patch("pathlib.Path.exists")
+@patch("mlx_man.model_registry.register_custom_model")
+@patch("mlx_man.opencode_sync.sync_opencode_config")
+def test_action_sync_models_custom_success(mock_sync, mock_reg, mock_exists, mock_input, mock_select):
+    mock_select.return_value = "custom"
+    mock_input.side_effect = ["/good/path", "My Model", None]
+    mock_exists.return_value = True
+    action_sync_models()
+    mock_reg.assert_called_once_with("/good/path", "My Model")
+    mock_sync.assert_called_once()
+
