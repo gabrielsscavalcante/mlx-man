@@ -26,5 +26,5 @@ Apple Silicon Optimizations: Recommend and implement commands to increase the sy
 Every feature requires comprehensive `pytest` coverage:
 Domain Logic Tests: Verify cache scanning, size calculations, and orphaned blob detection in `src/mlx_man/model_manager.py`.
 Safety Tests: Mock filesystem deletions and process kills to strictly verify that unconfirmed prompts abort safely and confirmed actions target the correct resources.
-Rendering Tests: Use `rich.console.Console(record=True)` to assert that UI views (dashboards, tables) render without raising exceptions and that text formatting respects standard terminal widths.
+Rendering Tests: Use `rich.console.Console(record=True)` to assert that UI views render cleanly. All TUI views MUST include snapshot tests that save SVG images using `Console.save_svg()` and strict string matching using baseline `.txt` snapshots (run with `UPDATE_SNAPSHOTS=1` to generate them).
 Test Environment: Tests no longer need `sys.path` hacks thanks to `pyproject.toml` (which declares `pythonpath = ["src"]` and allows editable installation via `pip install -e '.[dev]'`).

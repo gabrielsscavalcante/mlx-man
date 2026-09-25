@@ -1,0 +1,30 @@
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+          ╭────────────── Clean Up RAM ───────────────╮                                                                 
+          │                                           │                                                                 
+          │    Total System RAM: 24.0 GB / 32.0 GB    │                                                                 
+          │    Memory Pressure / Wired RAM: 4.0 GB    │                                                                 
+          │    Reclaimable Target: ~2.0 GB            │                                                                 
+          │                                           │                                                                 
+          ╰───────────────────────────────────────────╯                                                                 
+                                                                                                                        
+          ╭──────────────────────────────────────────────────────────────────────────────────────────────────╮          
+          │                                                                                                  │          
+          │ Running Processes                                                                                │          
+          │   PID          Process Name                 RAM Usage    Risk Level       Description / Impact   │          
+          │   1001         Safari                         1024 MB    Safe             Web browser            │          
+          │   1002         kernel_task                     500 MB    Protected        Critical               │          
+          │   1003         Spotlight                       200 MB    Caution          Index                  │          
+          │                                                                                                  │          
+          ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯          
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+ Apple M-Mock  ·  🟡 8.0/32.0 GB RAM  ·  GPU: 24 GB                                                                     

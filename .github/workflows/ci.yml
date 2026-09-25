@@ -30,6 +30,38 @@ jobs:
       run: |
         uv pip install --system -e ".[dev]"
         
-    - name: Run tests
+    - name: Run unit tests
       run: |
         make test
+
+  test-ui:
+    name: Run UI Snapshot Tests
+    runs-on: macos-latest
+    steps:
+    - uses: actions/checkout@v7
+    
+    - name: Set up Python 3.12
+      uses: actions/setup-python@v7
+      with:
+        python-version: "3.12"
+        
+    - name: Install uv
+      uses: astral-sh/setup-uv@v10.2.0
+      with:
+        version: "latest"
+        
+    - name: Install project and dependencies
+      run: |
+        uv pip install --system -e ".[dev]"
+        
+    - name: Run UI snapshot tests
+      run: |
+        make test-ui
+
+    - name: Upload UI Snapshots
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ui-snapshots
+        path: tests/snapshots/*.svg
+        retention-days: 7

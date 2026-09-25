@@ -10,8 +10,14 @@ install: ## Install MLX-Man in the active environment
 install-dev: ## Install MLX-Man with development dependencies
 	pip install -e ".[dev]"
 
-test: ## Run the test suite
-	pytest -v
+test: ## Run the unit test suite (ignores UI snapshots)
+	pytest tests/ --ignore=tests/test_ui_snapshots.py -v
+
+test-ui: ## Run UI snapshot tests
+	pytest tests/test_ui_snapshots.py -v
+
+test-all: ## Run all tests
+	pytest tests/ -v
 
 test-cov: ## Run tests with coverage report
 	pytest --cov=mlx_man --cov-report=term-missing -v

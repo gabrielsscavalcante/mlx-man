@@ -2,8 +2,8 @@ import pytest
 from unittest.mock import patch, MagicMock
 
 from mlx_man.process_service import ProcessClassifier, ProcessService, ProcessInfo
-from mlx_man.ram_manager_view import get_process_table
 from rich.console import Console
+
 
 class TestProcessClassifier:
     def test_safe_processes(self):
@@ -19,6 +19,7 @@ class TestProcessClassifier:
         assert ProcessClassifier.classify("ControlCenter")[0] == "Danger"
         assert ProcessClassifier.classify("NotificationCenter")[0] == "Danger"
         assert ProcessClassifier.classify("cloudd")[0] == "Danger"
+
 
 class TestTerminationSafety:
     @patch('mlx_man.process_service.psutil.Process')
@@ -43,7 +44,7 @@ class TestTerminationSafety:
         mock_p.terminate.assert_called_once()
         mock_p.kill.assert_called_once()
 
-    @patch('mlx_man.ram_manager_view.tui_select')
+    @patch('mlx_man.ram_manager_view.tui_table_select')
     @patch('mlx_man.ram_manager_view.ProcessService.terminate_process')
     @patch('mlx_man.ram_manager_view.ProcessService.get_system_memory_info')
     @patch('mlx_man.ram_manager_view.ProcessService.get_processes')
@@ -53,19 +54,12 @@ class TestTerminationSafety:
         mock_get_mem.return_value = {"used_gb": 10, "total_gb": 32, "wired_gb": 2}
         mock_get_processes.return_value = []
         safe_proc = ProcessInfo(123, "language_server", 100, "Safe", "Desc")
-        mock_select.side_effect = [safe_proc, "cancel"]
+        mock_select.side_effect = [safe_proc, None]
         mock_confirm.return_value = False
         run_ram_manager(expert_mode=False)
         mock_terminate.assert_not_called()
-        
-        # Verify format_func passed to tui_select
-        assert mock_select.call_count >= 1
-        _, kwargs = mock_select.call_args_list[0]
-        format_func = kwargs["format_func"]
-        assert format_func("cancel") == "Exit"
-        assert format_func(safe_proc) == "language_server (123)"
 
-    @patch('mlx_man.ram_manager_view.tui_select')
+    @patch('mlx_man.ram_manager_view.tui_table_select')
     @patch('mlx_man.ram_manager_view.ProcessService.terminate_process')
     @patch('mlx_man.ram_manager_view.ProcessService.get_system_memory_info')
     @patch('mlx_man.ram_manager_view.ProcessService.get_processes')
@@ -75,12 +69,12 @@ class TestTerminationSafety:
         mock_get_mem.return_value = {"used_gb": 10, "total_gb": 32, "wired_gb": 2}
         mock_get_processes.return_value = []
         danger_proc = ProcessInfo(123, "ControlCenter", 100, "Danger", "Desc")
-        mock_select.side_effect = [danger_proc, "cancel"]
+        mock_select.side_effect = [danger_proc, None]
         run_ram_manager(expert_mode=False)
         mock_text.assert_called_once()
         mock_terminate.assert_not_called()
 
-    @patch('mlx_man.ram_manager_view.tui_select')
+    @patch('mlx_man.ram_manager_view.tui_table_select')
     @patch('mlx_man.ram_manager_view.ProcessService.terminate_process')
     @patch('mlx_man.ram_manager_view.ProcessService.get_system_memory_info')
     @patch('mlx_man.ram_manager_view.ProcessService.get_processes')
@@ -91,26 +85,11 @@ class TestTerminationSafety:
         mock_get_mem.return_value = {"used_gb": 10, "total_gb": 32, "wired_gb": 2}
         mock_get_processes.return_value = []
         safe_proc = ProcessInfo(123, "language_server", 100, "Safe", "Desc")
-        mock_select.side_effect = [safe_proc, "cancel"]
+        mock_select.side_effect = [safe_proc, None]
         mock_confirm.return_value = True
         mock_terminate.return_value = True
         run_ram_manager(expert_mode=False)
         mock_terminate.assert_called_once_with(123)
         mock_text.assert_called_once()
 
-class TestUIRendering:
-    def test_render_table_no_truncation(self):
-        console = Console(record=True, width=120)
-        processes = [
-            ProcessInfo(1001, "language_server", 244.5, "Safe", "Safe process desc"),
-            ProcessInfo(1002, "Siri AI", 150.0, "Caution", "Caution process desc"),
-            ProcessInfo(1003, "ControlCenter", 50.2, "Danger", "Danger process desc")
-        ]
-        table = get_process_table(processes)
-        console.print(table)
-        output = console.export_text()
-        assert "Safe" in output
-        assert "Caution" in output
-        assert "Protected" in output
-        assert "language_server" in output
-        assert "244 MB" in output
+

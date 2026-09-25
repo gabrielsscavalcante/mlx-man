@@ -26,23 +26,19 @@ def test_category_heuristics():
     assert categorize_model("mlx-community/QwQ-32B-4bit") == "Reasoning"
     assert categorize_model("mlx-community/Qwen3.6-27B-4bit") == "General"
 
+@patch('mlx_man.model_inspector.tui_table_select')
 @patch('mlx_man.model_inspector.tui_select')
 @patch('mlx_man.model_inspector._model_action_menu')
 @patch('mlx_man.model_inspector.download_model')
 @patch('mlx_man.model_inspector.discover_models')
-def test_interactive_action_routing(mock_discover, mock_download, mock_action_menu, mock_select):
+def test_interactive_action_routing(mock_discover, mock_download, mock_action_menu, mock_select, mock_table_select):
     mock_discover.return_value = [{
         "model_id": "dummy/model",
         "disk_bytes": 1024 * 1024 * 1024 * 5,
         "specs": {},
     }]
 
-    mock_select.side_effect = [
-        "inspect",
-        "cancel",
-        "download",
-        "back"
-    ]
+    mock_table_select.side_effect = ["download", "back"]
 
     run_model_inspector()
 
@@ -50,11 +46,7 @@ def test_interactive_action_routing(mock_discover, mock_download, mock_action_me
     assert not mock_action_menu.called
 
     dummy_meta = build_model_metadata(mock_discover.return_value[0])
-    mock_select.side_effect = [
-        "inspect",
-        dummy_meta,
-        "back"
-    ]
+    mock_table_select.side_effect = [dummy_meta, "back"]
 
     run_model_inspector()
     mock_action_menu.assert_called_with(dummy_meta)
@@ -73,43 +65,17 @@ def test_table_and_badge_rendering():
             quant_details="4-bit",
             best_for="Reasoning",
             raw_info={}
-        ),
-        ModelMetadata(
-            name="Devstral Small 24B",
-            repo_id="mlx-community/Devstral-Small-2507-4bit",
-            disk_gb=14.0,
-            ram_estimate_gb=15.0,
-            tier="Medium",
-            role="Builder",
-            quant_details="4-bit",
-            best_for="Coding",
-            raw_info={}
-        ),
-        ModelMetadata(
-            name="Qwen 3.6 27B",
-            repo_id="mlx-community/Qwen3.6-27B-4bit",
-            disk_gb=14.0,
-            ram_estimate_gb=15.0,
-            tier="Medium",
-            role="General",
-            quant_details="4-bit",
-            best_for="General usage",
-            raw_info={}
         )
     ]
 
-    group = render_model_manager(models)
-    console.print(group)
+    panel = render_model_manager(models)
+    console.print(panel)
     output = console.export_text()
 
-    assert "QwQ 32B" in output
-    assert "Devstral Small 24B" in output
-    assert "Qwen 3.6 27B" in output
-    assert "🧠" in output
-    assert "⚒️" in output
-    assert "⚡" in output
-    assert "Heavy" in output
-    assert "Medium" in output
+    assert "Total Installed Models:" in output
+    assert "1" in output
+    assert "Total Disk Footprint:" in output
+    assert "18.0 GB" in output
 
 
 @patch('mlx_man.model_inspector.tui_select')
@@ -150,3 +116,4 @@ def test_download_model_invalid_format(mock_confirm, mock_text):
     download_model()
 
     assert mock_confirm.called
+

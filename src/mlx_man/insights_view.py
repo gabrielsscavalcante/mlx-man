@@ -133,6 +133,7 @@ def get_insights_view(models: List[ModelInfo], category_filter: str = "All") -> 
         
     summary_text.append("📊 Total Inferences: ", style="bold magenta")
     summary_text.append(f"{total_uses}\n", style="bold white")
+    summary_text.append(f"{total_uses}\n", style="bold white")
     
     summary_text.append("💾 Total Disk Usage: ", style="bold white")
     summary_text.append(f"{total_size_gb:.1f} GB ", style="bold white")
@@ -171,71 +172,62 @@ def get_insights_view(models: List[ModelInfo], category_filter: str = "All") -> 
                 f"{stats['size']:.1f} GB"
             )
         components.append(breakdown_table)
-        components.append(Text(""))
 
-    # 3. Table of Models
-    model_columns = [
-        {"header": "Model Name", "style": "bold white"},
-        {"header": "Category", "justify": "center"},
-        {"header": "Size", "justify": "right", "style": "dim"},
-        {"header": "Uses", "justify": "right"},
-        {"header": "Last Used", "style": "dim"},
-    ]
-    table = create_data_table(title=f"Installed Models [dim]({category_filter})[/]", columns=model_columns)
-
-    # Sort models: least used first (0 usage at top) to encourage deletion of unused models
-    sorted_models = sorted(models, key=lambda m: (m.times_used, m.last_used or datetime.datetime.min))
-    
-    displayed_count = 0
-    for m in sorted_models:
-        if category_filter != "All" and m.category != category_filter:
-            continue
-            
-        cat_color = get_category_color(m.category)
-        cat_badge = f"[{cat_color} reverse] {m.category} [/]"
-        
-        uses_style = "red" if m.times_used == 0 else "white"
-        uses_text = f"[{uses_style}]{m.times_used}[/]"
-        
-        last_used_str = m.last_used.strftime('%Y-%m-%d %H:%M') if m.last_used else "Never"
-        
-        table.add_row(
-            m.name,
-            cat_badge,
-            f"{m.size_gb:.1f} GB",
-            uses_text,
-            last_used_str
-        )
-        displayed_count += 1
-
-    if displayed_count == 0:
-        components.append(Text(f"  No installed models found for category '{category_filter}'.", style="dim"))
-    else:
-        components.append(table)
-        
     return Group(*components)
 
 def render_insights_view(models: List[ModelInfo], category_filter: str = "All") -> None:
     """Legacy function to appease old tests that mocked console."""
     console.print(get_insights_view(models, category_filter))
 
+from mlx_man.tui_engine import tui_table_select
+
 def run_insights_history():
     current_filter = "All"
     while True:
         models = gather_models()
-        view = get_insights_view(models, current_filter)
+        header_view = get_insights_view(models, current_filter)
+        footer_text = get_system_status_footer() + "  |  [Enter] Remove  |  [f] Filter"
 
-        choice = tui_select(
-            title="Select action:",
-            choices=["remove", "filter", "back"],
-            format_func=lambda x: {
-                "remove": "🗑️  Remove Model(s)",
-                "filter": "📊 Filter by Category",
-                "back": "⬅️  Back to Main Menu",
-            }.get(x, str(x)),
-            header=view,
-            footer=get_system_status_footer(),
-        )
+        filtered_models = [m for m in models if current_filter == "All" or m.category == current_filter]
+        sorted_models = sorted(filtered_models, key=lambda x: (x.times_used, x.last_used or datetime.datetime.min))
+
+        if not sorted_models:
+            choice = tui_select(
+                title="No models found.",
+                choices=["filter", "back"],
+                format_func=lambda x: {"filter": "📊 Filter", "back": "⬅️ Back"}[x],
+                header=header_view,
+                footer=footer_text
+            )
+        else:
+            columns = [
+                {"header": "Model Name", "style": "bold white"},
+                {"header": "Category", "justify": "center"},
+                {"header": "Size", "justify": "right", "style": "dim"},
+                {"header": "Uses", "justify": "right"},
+                {"header": "Last Used", "style": "dim"},
+            ]
+            
+            def get_row(m: ModelInfo):
+                cat_color = get_category_color(m.category)
+                cat_badge = Text(f" {m.category} ", style=f"{cat_color} reverse")
+                
+                uses_style = "bold red" if m.times_used == 0 else "white"
+                uses_text = Text(str(m.times_used), style=uses_style)
+                
+                last_used_str = m.last_used.strftime('%Y-%m-%d %H:%M') if m.last_used else "Never"
+                
+                return [m.name, cat_badge, f"{m.size_gb:.1f} GB", uses_text, last_used_str]
+                
+            choice = tui_table_select(
+                title=f"Installed Models ({current_filter})",
+                columns=columns,
+                data=sorted_models,
+                row_func=get_row,
+                header=header_view,
+                footer=footer_text,
+                extra_hotkeys={"f": "filter"}
+            )
 
         if not choice or choice == "back":
             break
@@ -245,39 +237,18 @@ def run_insights_history():
                 title="Select category to view:",
                 choices=["All", "Reasoning", "Build", "General"],
                 format_func=lambda x: str(x),
-                header=view,
+                header=header_view,
                 footer=get_system_status_footer(),
             )
             if filter_choice:
                 current_filter = filter_choice
-
-        elif choice == "remove":
-            # Show list of models to delete
-            if not models:
-                continue
-
-            sorted_models = sorted(models, key=lambda x: x.times_used)
-            remove_choices: List[Any] = list(sorted_models) + ["cancel"]
-
-            selected_model = tui_select(
-                title="Select model to completely remove:",
-                choices=remove_choices,
-                format_func=lambda m: (
-                    f"{m.name} ({m.size_gb:.1f} GB) - {m.times_used} uses"
-                    if isinstance(m, ModelInfo) or (hasattr(m, "name") and hasattr(m, "size_gb") and hasattr(m, "times_used"))
-                    else "Cancel"
-                ),
-                header=view,
-                footer=get_system_status_footer(),
-                width=70,
-            )
-
-            if not selected_model or selected_model == "cancel":
-                continue
-
+            continue
+            
+        if isinstance(choice, ModelInfo):
+            selected_model = choice
             confirm = tui_confirm(
                 prompt=f"⚠️ Are you sure you want to permanently delete {selected_model.name} (reclaiming {selected_model.size_gb:.1f} GB)?",
-                header=view,
+                header=header_view,
                 footer=get_system_status_footer(),
             )
 
