@@ -39,11 +39,12 @@ def assert_snapshot(console: Console, base_name: str):
     # Also save the SVG so the CI produces it as an artifact, but don't strictly assert SVG bytes
     console.save_svg(svg_path, title=base_name)
 
+@patch('mlx_man.cli_dashboard.random.choice', return_value="Connect external coding tools or agents to MLX-Man's local server on port 8080")
 @patch('mlx_man.cli_dashboard.get_chip_name', return_value="Apple M-Mock")
 @patch('mlx_man.cli_dashboard.get_free_ram_gb', return_value=16.0)
 @patch('mlx_man.cli_dashboard.get_total_ram_gb', return_value=32.0)
 @patch('mlx_man.cli_dashboard.get_current_gpu_limit', return_value="24 GB")
-def test_main_menu_snapshot(m1, m2, m3, m4):
+def test_main_menu_snapshot(m1, m2, m3, m4, m5):
     from mlx_man.cli_dashboard import get_system_status_footer
     
     console = Console(width=100, height=30, record=True, force_terminal=True)

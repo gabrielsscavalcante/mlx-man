@@ -30,9 +30,13 @@ jobs:
       run: |
         uv pip install --system -e ".[dev]"
         
-    - name: Run tests
+    - name: Run unit tests
       run: |
         make test
+
+    - name: Run UI snapshot tests
+      run: |
+        make test-ui
 
     - name: Upload UI Snapshots
       if: always()
