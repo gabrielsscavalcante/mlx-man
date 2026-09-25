@@ -511,3 +511,50 @@ def test_model_delete_confirm_snapshot(m1, m2, m3, m4):
     
     console.print(layout)
     assert_snapshot(console, "model_delete_confirm")
+
+@patch('mlx_man.cli_dashboard.get_chip_name', return_value="Apple M-Mock")
+@patch('mlx_man.cli_dashboard.get_free_ram_gb', return_value=16.0)
+@patch('mlx_man.cli_dashboard.get_total_ram_gb', return_value=32)
+@patch('mlx_man.cli_dashboard.get_current_gpu_limit', return_value="24 GB")
+def test_sync_models_snapshot(m1, m2, m3, m4):
+    from mlx_man.cli_dashboard import get_system_status_footer, get_banner
+    from mlx_man.tui_engine import build_layout
+    from rich.console import Console, Group
+    from rich.text import Text
+    from rich.panel import Panel
+    from rich import box
+    
+    console = Console(width=120, height=35, record=True, force_terminal=True)
+    
+    header = get_banner()
+    
+    options = [
+        ("🔍  Search Hugging Face Cache", "search"),
+        ("📁  Add Custom Local Path", "custom"),
+        ("↩   Back", "back")
+    ]
+    
+    menu_lines = []
+    for i, (label, val) in enumerate(options):
+        if i == 0:
+            t = Text(f" ▸ {label}")
+            t.pad_right(40)
+            t.stylize("bold black on white")
+            menu_lines.append(t)
+        else:
+            menu_lines.append(Text(f"   {label}", style="dim white"))
+            
+    panel = Panel(
+        Group(*menu_lines),
+        title="Sync Models to MLX-Man & OpenCode",
+        box=box.ROUNDED,
+        border_style="bright_black",
+        width=46,
+        padding=(1, 1),
+    )
+    
+    body = Group(header, Text(""), panel)
+    layout = build_layout(body, get_system_status_footer(), 120, 35, shortcuts={"↑↓": "navigate", "enter": "select", "esc/q": "back"})
+    
+    console.print(layout)
+    assert_snapshot(console, "sync_models")
