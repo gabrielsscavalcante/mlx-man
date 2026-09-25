@@ -368,3 +368,146 @@ def test_insights_snapshot(m1, m2, m3, m4):
     
     console.print(layout)
     assert_snapshot(console, "insights")
+
+@patch('mlx_man.cli_dashboard.get_chip_name', return_value="Apple M-Mock")
+@patch('mlx_man.cli_dashboard.get_free_ram_gb', return_value=16.0)
+@patch('mlx_man.cli_dashboard.get_total_ram_gb', return_value=32)
+@patch('mlx_man.cli_dashboard.get_current_gpu_limit', return_value="24 GB")
+def test_download_model_snapshot(m1, m2, m3, m4):
+    from mlx_man.cli_dashboard import get_system_status_footer
+    from mlx_man.ui_components import create_header_panel
+    from mlx_man.tui_engine import build_layout
+    from rich.console import Console, Group
+    from rich.text import Text
+    from rich.panel import Panel
+    from rich import box
+    
+    console = Console(width=120, height=30, record=True, force_terminal=True)
+    
+    prompt_text = Text("Enter a HuggingFace model ID (e.g., mlx-community/Qwen3.6-27B-4bit)", style="dim")
+    panel_header = create_header_panel(prompt_text, "Download New Model")
+    
+    buf = "mlx-community/Llama-3-8B-Instruct-4bit"
+    content = Group(
+        Text("Model ID:", style="bold white"),
+        Text(""),
+        Text(buf + "█", style="white")
+    )
+    
+    panel = Panel(
+        content,
+        box=box.ROUNDED,
+        border_style="bright_black",
+        width=60,
+        padding=(1, 1),
+    )
+    
+    body = Group(panel_header, Text(""), panel)
+    layout = build_layout(body, get_system_status_footer(), 120, 30, shortcuts={"enter": "submit", "esc": "cancel"})
+    
+    console.print(layout)
+    assert_snapshot(console, "download_model")
+
+
+@patch('mlx_man.cli_dashboard.get_chip_name', return_value="Apple M-Mock")
+@patch('mlx_man.cli_dashboard.get_free_ram_gb', return_value=16.0)
+@patch('mlx_man.cli_dashboard.get_total_ram_gb', return_value=32)
+@patch('mlx_man.cli_dashboard.get_current_gpu_limit', return_value="24 GB")
+def test_model_action_menu_snapshot(m1, m2, m3, m4):
+    from mlx_man.cli_dashboard import get_system_status_footer
+    from mlx_man.ui_components import create_header_panel
+    from mlx_man.tui_engine import build_layout
+    from rich.console import Console, Group
+    from rich.text import Text
+    from rich.panel import Panel
+    from rich import box
+    
+    console = Console(width=120, height=35, record=True, force_terminal=True)
+    
+    details = Text()
+    details.append("Model ID: ", style="bold white")
+    details.append("mlx-community/QwQ-32B-4bit\n", style="dim")
+    details.append("Disk Size: ", style="bold white")
+    details.append("18.0 GB\n", style="dim")
+    details.append("RAM Est: ", style="bold white")
+    details.append("19.0 GB\n", style="dim")
+    details.append("Quant: ", style="bold white")
+    details.append("4-bit\n", style="dim")
+
+    header = create_header_panel(details, "QwQ 32B")
+    
+    choices = [
+        ("▶️  Run Model (Chat)", "run"),
+        ("🌐 Serve Model (API)", "serve"),
+        ("ℹ️  View Detailed Metadata", "meta"),
+        ("🗑️  Delete Model", "delete"),
+        ("⬅️  Return to Model List", "back")
+    ]
+    
+    menu_lines = []
+    for i, (label, val) in enumerate(choices):
+        if i == 0:
+            t = Text(f" ▸ {label}")
+            t.pad_right(40)
+            t.stylize("bold black on white")
+            menu_lines.append(t)
+        else:
+            menu_lines.append(Text(f"   {label}", style="dim white"))
+            
+    panel = Panel(
+        Group(*menu_lines),
+        box=box.ROUNDED,
+        border_style="bright_black",
+        width=46,
+        padding=(1, 1),
+    )
+    
+    body = Group(header, Text(""), panel)
+    layout = build_layout(body, get_system_status_footer(), 120, 35, shortcuts={"↑↓": "navigate", "enter": "select", "esc/q": "back"})
+    
+    console.print(layout)
+    assert_snapshot(console, "model_action_menu")
+
+
+@patch('mlx_man.cli_dashboard.get_chip_name', return_value="Apple M-Mock")
+@patch('mlx_man.cli_dashboard.get_free_ram_gb', return_value=16.0)
+@patch('mlx_man.cli_dashboard.get_total_ram_gb', return_value=32)
+@patch('mlx_man.cli_dashboard.get_current_gpu_limit', return_value="24 GB")
+def test_model_delete_confirm_snapshot(m1, m2, m3, m4):
+    from mlx_man.cli_dashboard import get_system_status_footer
+    from mlx_man.ui_components import create_header_panel
+    from mlx_man.tui_engine import build_layout
+    from rich.console import Console, Group
+    from rich.text import Text
+    from rich.panel import Panel
+    from rich import box
+    
+    console = Console(width=120, height=30, record=True, force_terminal=True)
+    
+    details = Text()
+    details.append("Model ID: ", style="bold white")
+    details.append("mlx-community/QwQ-32B-4bit\n", style="dim")
+    header = create_header_panel(details, "QwQ 32B")
+    
+    choices = [("No", False), ("Yes", True)]
+    
+    menu_lines = [Text("⚠️ Permanently delete QwQ 32B (reclaim 18.0 GB)?", style="bold yellow"), Text("")]
+    for i, (label, val) in enumerate(choices):
+        if i == 0:
+            t = Text(f" {label}"); t.pad_right(40); t.stylize("bold black on white"); menu_lines.append(t)
+        else:
+            menu_lines.append(Text(f" {label}", style="dim white"))
+            
+    panel = Panel(
+        Group(*menu_lines),
+        box=box.ROUNDED,
+        border_style="yellow",
+        width=46,
+        padding=(1, 1),
+    )
+    
+    body = Group(header, Text(""), panel)
+    layout = build_layout(body, get_system_status_footer(), 120, 30, shortcuts={"↑↓": "toggle", "enter": "confirm", "esc/q": "cancel"})
+    
+    console.print(layout)
+    assert_snapshot(console, "model_delete_confirm")
