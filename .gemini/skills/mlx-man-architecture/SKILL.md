@@ -193,3 +193,7 @@ python -m mlx_man    # Package invocation
 3. **Process killing** → 3-tier safety classification (Safe/Caution/Danger)
 4. **Long operations** (model downloads) → progress indicators to prevent stall perception
 5. **GPU memory** → offer `sudo sysctl iogpu.wired_limit_mb=N` when running heavy models
+
+## UI/UX & Design
+
+For all rules regarding the presentation layer, visual aesthetics, color palettes, and reusable UI components (`mlx_man.ui_components`), you MUST refer strictly to the **`mlx-man-design`** skill. The architecture strictly mandates that the Presentation Layer logic contains no business logic and relies on the central layout engine for rendering.

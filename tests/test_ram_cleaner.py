@@ -2,9 +2,8 @@ import pytest
 from unittest.mock import patch, MagicMock
 
 from mlx_man.process_service import ProcessClassifier, ProcessService, ProcessInfo
-from mlx_man.ram_manager_view import render_process_table, render_header
+from mlx_man.ram_manager_view import get_process_table
 from rich.console import Console
-
 
 class TestProcessClassifier:
     def test_safe_processes(self):
@@ -20,7 +19,6 @@ class TestProcessClassifier:
         assert ProcessClassifier.classify("ControlCenter")[0] == "Danger"
         assert ProcessClassifier.classify("NotificationCenter")[0] == "Danger"
         assert ProcessClassifier.classify("cloudd")[0] == "Danger"
-
 
 class TestTerminationSafety:
     @patch('mlx_man.process_service.psutil.Process')
@@ -49,9 +47,9 @@ class TestTerminationSafety:
     @patch('mlx_man.ram_manager_view.ProcessService.terminate_process')
     @patch('mlx_man.ram_manager_view.ProcessService.get_system_memory_info')
     @patch('mlx_man.ram_manager_view.ProcessService.get_processes')
-    @patch('mlx_man.ram_manager_view.os.system')
     @patch('mlx_man.ram_manager_view.questionary.confirm')
-    def test_cancel_confirmation_aborts(self, mock_confirm, mock_system, mock_get_processes, mock_get_mem, mock_terminate, mock_select):
+    @patch('mlx_man.ram_manager_view.render_centered_view')
+    def test_cancel_confirmation_aborts(self, mock_render, mock_confirm, mock_get_processes, mock_get_mem, mock_terminate, mock_select):
         from mlx_man.ram_manager_view import run_ram_manager
         mock_get_mem.return_value = {"used_gb": 10, "total_gb": 32, "wired_gb": 2}
         mock_get_processes.return_value = []
@@ -65,9 +63,9 @@ class TestTerminationSafety:
     @patch('mlx_man.ram_manager_view.ProcessService.terminate_process')
     @patch('mlx_man.ram_manager_view.ProcessService.get_system_memory_info')
     @patch('mlx_man.ram_manager_view.ProcessService.get_processes')
-    @patch('mlx_man.ram_manager_view.os.system')
     @patch('mlx_man.ram_manager_view.questionary.text')
-    def test_danger_without_override_prevents_kill(self, mock_text, mock_system, mock_get_processes, mock_get_mem, mock_terminate, mock_select):
+    @patch('mlx_man.ram_manager_view.render_centered_view')
+    def test_danger_without_override_prevents_kill(self, mock_render, mock_text, mock_get_processes, mock_get_mem, mock_terminate, mock_select):
         from mlx_man.ram_manager_view import run_ram_manager
         mock_get_mem.return_value = {"used_gb": 10, "total_gb": 32, "wired_gb": 2}
         mock_get_processes.return_value = []
@@ -77,7 +75,6 @@ class TestTerminationSafety:
         mock_text.return_value.ask.assert_called_once()
         mock_terminate.assert_not_called()
 
-
 class TestUIRendering:
     def test_render_table_no_truncation(self):
         console = Console(record=True, width=120)
@@ -86,7 +83,8 @@ class TestUIRendering:
             ProcessInfo(1002, "Siri AI", 150.0, "Caution", "Caution process desc"),
             ProcessInfo(1003, "ControlCenter", 50.2, "Danger", "Danger process desc")
         ]
-        render_process_table(processes, console_obj=console)
+        table = get_process_table(processes)
+        console.print(table)
         output = console.export_text()
         assert "Safe" in output
         assert "Caution" in output

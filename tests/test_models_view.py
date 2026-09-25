@@ -98,7 +98,7 @@ def test_table_and_badge_rendering():
         )
     ]
 
-    with patch('mlx_man.model_inspector.render_page') as mock_render:
+    with patch('mlx_man.model_inspector.render_centered_view') as mock_render:
         render_model_manager(models)
 
     group = mock_render.call_args[0][0]
@@ -113,3 +113,51 @@ def test_table_and_badge_rendering():
     assert "⚡" in output
     assert "Heavy" in output
     assert "Medium" in output
+
+
+@patch('mlx_man.model_inspector.questionary.select')
+@patch('mlx_man.model_inspector.questionary.confirm')
+@patch('mlx_man.model_inspector.delete_model_from_disk')
+@patch('mlx_man.model_inspector.render_centered_view')
+def test_model_action_menu_delete(mock_render, mock_delete, mock_confirm, mock_select):
+    from mlx_man.model_inspector import _model_action_menu
+
+    dummy_model = ModelMetadata(
+        name="Test Model",
+        repo_id="test/model",
+        disk_gb=5.0,
+        ram_estimate_gb=6.0,
+        tier="Light",
+        role="General",
+        quant_details="4-bit",
+        best_for="General usage",
+        raw_info={}
+    )
+
+    mock_select.return_value.ask.side_effect = ["delete"]
+    mock_confirm.return_value.ask.return_value = True
+    mock_delete.return_value = 5 * 1024**3
+
+    _model_action_menu(dummy_model)
+
+    assert mock_delete.called
+    # Check that render_centered_view was called with prompt_lines=7 for the menu and prompt_lines=0 for the result
+    call_args_list = mock_render.call_args_list
+    assert any(c.kwargs.get("prompt_lines") == 7 for c in call_args_list)
+    assert any(c.kwargs.get("prompt_lines") == 0 for c in call_args_list)
+
+
+@patch('mlx_man.model_inspector.questionary.text')
+@patch('mlx_man.model_inspector.render_centered_view')
+def test_download_model_invalid_format(mock_render, mock_text):
+    from mlx_man.model_inspector import download_model
+
+    mock_text.return_value.ask.return_value = "invalid_id"
+
+    download_model()
+
+    call_args_list = mock_render.call_args_list
+    # First call: prompt screen with prompt_lines=2
+    assert call_args_list[0].kwargs.get("prompt_lines") == 2
+    # Second call: error warning panel with prompt_lines=0
+    assert call_args_list[1].kwargs.get("prompt_lines") == 0

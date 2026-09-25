@@ -16,15 +16,14 @@ from typing import Dict, List, Optional, Literal
 from dataclasses import dataclass
 
 from rich.console import Console, Group
-from rich.panel import Panel
-from rich.table import Table
 from rich.text import Text
 import questionary
 
 from mlx_man.model_registry import MODEL_REGISTRY, get_registry_entry, ROLE_INFO
 from mlx_man.model_manager import delete_model_from_disk, HF_CACHE_DIR, MODEL_DIR_PREFIX, calculate_model_disk_size
 from mlx_man.cli_dashboard import get_total_ram_gb, get_current_gpu_limit
-from mlx_man.cli_layout import render_page
+from mlx_man.ui_components import create_header_panel, create_data_table, create_warning_panel
+from mlx_man.cli_layout import render_centered_view
 
 console = Console()
 
@@ -191,33 +190,29 @@ def render_model_manager(models: List[ModelMetadata], filter_role: str = "All"):
     gpu_limit = get_current_gpu_limit()
 
     summary_text = Text()
-    summary_text.append("📦 Total Installed Models: ", style="bold cyan")
-    summary_text.append(f"{total_models}\n", style="bold white")
-    summary_text.append("💾 Total Disk Footprint: ", style="bold cyan")
-    summary_text.append(f"{total_disk_gb:.1f} GB\n", style="bold white")
-    summary_text.append("🖥️  System RAM Context: ", style="bold cyan")
-    summary_text.append(f"{system_ram} GB Unified  |  Limit: {gpu_limit}", style="dim white")
+    summary_text.append("📦 Total Installed Models: ", style="bold white")
+    summary_text.append(f"{total_models}\n", style="dim")
+    summary_text.append("💾 Total Disk Footprint: ", style="bold white")
+    summary_text.append(f"{total_disk_gb:.1f} GB\n", style="dim")
+    summary_text.append("🖥️  System RAM Context: ", style="bold white")
+    summary_text.append(f"{system_ram} GB Unified  |  Limit: {gpu_limit}", style="dim")
 
-    header_panel = Panel(
-        summary_text,
-        title="[bold cyan]Manage Models[/]",
-        border_style="cyan",
-        expand=False,
-        padding=(1, 4)
-    )
+    header_panel = create_header_panel(summary_text, "Manage Models")
 
-    table = Table(box=None, expand=False, padding=(0, 2))
-    table.add_column("Model Name & Quant", style="bold white")
-    table.add_column("Role / Category", justify="center")
-    table.add_column("Resource Cost", justify="right")
-    table.add_column("Tier Badge", justify="center")
-    table.add_column("Best For", style="dim")
+    columns = [
+        {"header": "Model Name & Quant", "style": "bold white"},
+        {"header": "Role / Category", "justify": "center"},
+        {"header": "Resource Cost", "justify": "right"},
+        {"header": "Tier Badge", "justify": "center"},
+        {"header": "Best For", "style": "dim"},
+    ]
+    table = create_data_table(columns=columns)
 
     for m in models:
         if filter_role != "All" and m.role != filter_role:
             continue
             
-        quant_pill = f"[dim cyan]{m.quant_details}[/]"
+        quant_pill = f"[dim]{m.quant_details}[/]"
         name_cell = f"{m.name}\n{quant_pill}"
         
         role_icon = get_role_icon(m.role)
@@ -237,7 +232,7 @@ def render_model_manager(models: List[ModelMetadata], filter_role: str = "All"):
     else:
         components.append(Text("No models found. Try downloading one!", style="yellow"))
 
-    render_page(Group(*components), top_padding=-1)
+    render_centered_view(Group(*components), prompt_lines=6)
 
 def run_model_inspector():
     """Main interactive loop for discovering, filtering, and selecting models."""
@@ -297,27 +292,19 @@ def run_model_inspector():
 def _model_action_menu(model: ModelMetadata):
     """Interactive submenu for performing actions on a selected model."""
     while True:
-        console.clear()
-        
         details = Text()
-        details.append(f"Model ID: ", style="bold cyan")
-        details.append(f"{model.repo_id}\n")
-        details.append(f"Disk Size: ", style="bold cyan")
-        details.append(f"{model.disk_gb:.1f} GB\n")
-        details.append(f"RAM Est: ", style="bold cyan")
-        details.append(f"{model.ram_estimate_gb:.1f} GB\n")
-        details.append(f"Quant: ", style="bold cyan")
-        details.append(f"{model.quant_details}\n")
+        details.append("Model ID: ", style="bold white")
+        details.append(f"{model.repo_id}\n", style="dim")
+        details.append("Disk Size: ", style="bold white")
+        details.append(f"{model.disk_gb:.1f} GB\n", style="dim")
+        details.append("RAM Est: ", style="bold white")
+        details.append(f"{model.ram_estimate_gb:.1f} GB\n", style="dim")
+        details.append("Quant: ", style="bold white")
+        details.append(f"{model.quant_details}\n", style="dim")
         
-        panel = Panel(
-            details,
-            title=f"[bold white]{model.name}[/]",
-            border_style="cyan",
-            expand=False,
-            padding=(1, 4)
-        )
+        panel = create_header_panel(details, model.name)
         
-        render_page(panel, top_padding=-1)
+        render_centered_view(panel, prompt_lines=7)
         
         action = questionary.select(
             f"Actions for {model.name}:",
@@ -347,7 +334,7 @@ def _model_action_menu(model: ModelMetadata):
                 console.print("\n[green]Server stopped.[/]")
                 
         elif action == "meta":
-            console.print("\n[bold cyan]Config.json extracted specs:[/]")
+            console.print("\n[bold white]Config.json extracted specs:[/]")
             import pprint
             pprint.pprint(model.raw_info.get("specs", {}))
             console.print(f"\n[dim]Cache Path: {model.raw_info.get('model_dir')}[/]")
@@ -362,17 +349,19 @@ def _model_action_menu(model: ModelMetadata):
             if confirm:
                 try:
                     freed = delete_model_from_disk(model.repo_id)
-                    console.print(f"\n[green]✔ Successfully deleted. Reclaimed {freed / (1024**3):.1f} GB.[/]")
+                    result_text = Text(f"✔ Successfully deleted. Reclaimed {freed / (1024**3):.1f} GB.", style="bold green")
+                    render_centered_view(create_warning_panel(result_text, "Model Deleted"), prompt_lines=0)
                     time.sleep(1.5)
                     break # Go back after deletion
                 except Exception as e:
-                    console.print(f"\n[red]✖ Failed to delete: {e}[/]", stderr=True)
+                    err_text = Text(f"✖ Failed to delete: {e}", style="bold red")
+                    render_centered_view(create_warning_panel(err_text, "Delete Failed"), prompt_lines=0)
                     time.sleep(2)
 
 def download_model():
-    console.clear()
-    console.print(Panel("[bold cyan]Download New Model[/]", expand=False))
-    console.print("Enter a HuggingFace model ID (e.g., mlx-community/Qwen3.6-27B-4bit)")
+    prompt_text = Text("Enter a HuggingFace model ID (e.g., mlx-community/Qwen3.6-27B-4bit)", style="dim")
+    panel = create_header_panel(prompt_text, "Download New Model")
+    render_centered_view(panel, prompt_lines=2)
     
     model_id = questionary.text("Model ID:").ask()
     if not model_id:
@@ -380,11 +369,10 @@ def download_model():
         
     model_id = model_id.replace("https://huggingface.co/", "").strip("/")
     if "/" not in model_id:
-        console.print("[red]Invalid format. Expected org/model-name[/]", stderr=True)
+        err_text = Text("Invalid format. Expected org/model-name", style="bold red")
+        render_centered_view(create_warning_panel(err_text, "Invalid Format"), prompt_lines=0)
         time.sleep(1.5)
         return
-        
-
 
     console.print(f"\n[yellow]Downloading {model_id}...[/]")
     try:
