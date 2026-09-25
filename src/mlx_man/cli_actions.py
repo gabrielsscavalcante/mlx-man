@@ -11,7 +11,9 @@ from rich.console import Group, Console
 from rich.text import Text
 
 from mlx_man.ui_components import create_header_panel, create_data_table, create_warning_panel
-from mlx_man.tui_engine import tui_select, tui_confirm
+from mlx_man.tui_engine import tui_select, tui_confirm, tui_text_input
+from mlx_man.cli_dashboard import get_banner, get_system_status_footer
+
 
 console = Console()
 
@@ -184,3 +186,87 @@ def action_run_server():
             subprocess.run([sys.executable, "-m", "mlx_lm", "chat", "--model", model_id])
         except KeyboardInterrupt:
             pass
+
+def action_sync_models():
+    """Interactive flow to sync unregistered or custom models."""
+    from mlx_man.model_registry import register_custom_model, MODEL_REGISTRY
+    from mlx_man.model_manager import get_installed_models
+    from mlx_man.opencode_sync import sync_opencode_config
+    from pathlib import Path
+    
+    options = [
+        ("🔍  Search Hugging Face Cache", "search"),
+        ("📁  Add Custom Local Path", "custom"),
+        ("↩   Back", "back")
+    ]
+    
+    choice = tui_select(
+        title="Sync Models to MLX-Man & OpenCode",
+        items=options,
+        header=get_banner(),
+        footer=get_system_status_footer()
+    )
+    
+    if not choice or choice == "back":
+        return
+        
+    if choice == "search":
+        installed = get_installed_models()
+        unregistered = [m["id"] for m in installed if m["id"] not in MODEL_REGISTRY]
+        
+        if not unregistered:
+            tui_text_input(
+                prompt="Press Enter to return...",
+                header=create_header_panel("✔ All cached models are already synced!", "Sync Complete"),
+                footer=get_system_status_footer()
+            )
+            return
+            
+        items = [(f"Add {mid}", mid) for mid in unregistered] + [("↩ Back", "back")]
+        selected_id = tui_select(
+            title="Found Unregistered Models",
+            items=items,
+            header=get_banner(),
+            footer=get_system_status_footer()
+        )
+        
+        if selected_id and selected_id != "back":
+            name = selected_id.split("/")[-1]
+            register_custom_model(selected_id, name)
+            sync_opencode_config()
+            tui_text_input(
+                prompt="Press Enter to continue...",
+                header=create_header_panel(f"✔ Successfully synced {name}!", "Sync Complete"),
+                footer=get_system_status_footer()
+            )
+            
+    elif choice == "custom":
+        path_str = tui_text_input(
+            prompt="Enter absolute path to the model directory:",
+            header=get_banner(),
+            footer=get_system_status_footer()
+        )
+        if not path_str:
+            return
+            
+        if not Path(path_str).exists():
+            tui_text_input(
+                prompt="Press Enter to return...",
+                header=create_warning_panel(f"Path does not exist: {path_str}", "Error"),
+                footer=get_system_status_footer()
+            )
+            return
+            
+        name = tui_text_input(
+            prompt="Enter a display name for this model:",
+            header=get_banner(),
+            footer=get_system_status_footer()
+        )
+        if name:
+            register_custom_model(path_str, name)
+            sync_opencode_config()
+            tui_text_input(
+                prompt="Press Enter to continue...",
+                header=create_header_panel(f"✔ Successfully synced {name}!", "Sync Complete"),
+                footer=get_system_status_footer()
+            )

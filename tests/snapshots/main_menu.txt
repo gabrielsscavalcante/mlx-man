@@ -16,12 +16,12 @@
        │    🧹  Clean Up RAM                                │                                       
        │    📦  Manage Models                               │                                       
        │    📊  Insights & History                          │                                       
+       │    🔄  Sync Models                                 │                                       
        │   ──────────────────────────────────────────────── │                                       
        │    ⏻   Exit                                        │                                       
        ╰────────────────────────────────────────────────────╯                                       
                                                                                                     
        ● Tip  Connect external coding tools or agents to MLX-Man's local server on port 8080        
-                                                                                                    
                                                                                                     
                                                                                                     
                                                                                                     

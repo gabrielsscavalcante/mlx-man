@@ -517,3 +517,56 @@ ROLE_INFO = {
         "description": "Good at both reasoning and coding",
     },
 }
+
+import os
+import json
+
+def _get_config_dir() -> str:
+    config_home = os.environ.get("XDG_CONFIG_HOME") or os.path.join(
+        os.path.expanduser("~"), ".config"
+    )
+    config_dir = os.path.join(config_home, "mlx-man")
+    os.makedirs(config_dir, exist_ok=True)
+    return config_dir
+
+CUSTOM_MODELS_FILE = os.path.join(_get_config_dir(), "custom_models.json")
+
+def load_custom_models():
+    """Load custom models from disk and inject them into MODEL_REGISTRY."""
+    if os.path.exists(CUSTOM_MODELS_FILE):
+        try:
+            with open(CUSTOM_MODELS_FILE, "r") as f:
+                custom_models = json.load(f)
+                for mid, entry in custom_models.items():
+                    entry["role"] = entry.get("role", "general")
+                    entry["is_custom"] = True
+                    MODEL_REGISTRY[mid] = entry
+        except Exception:
+            pass
+
+def register_custom_model(model_id: str, name: str, role: str = "general"):
+    """Persist a new model to custom_models.json and the active registry."""
+    custom_models = {}
+    if os.path.exists(CUSTOM_MODELS_FILE):
+        try:
+            with open(CUSTOM_MODELS_FILE, "r") as f:
+                custom_models = json.load(f)
+        except Exception:
+            pass
+            
+    entry = {
+        "name": name,
+        "short_name": name,
+        "role": role,
+        "description": "Custom model added via Sync.",
+        "performance_tier": "Custom",
+        "is_custom": True
+    }
+    
+    custom_models[model_id] = entry
+    MODEL_REGISTRY[model_id] = entry
+    
+    with open(CUSTOM_MODELS_FILE, "w") as f:
+        json.dump(custom_models, f, indent=4)
+
+load_custom_models()
