@@ -4,13 +4,13 @@
                                                                                                                         
                                                                                                                         
                                                                                                                         
-          ╭──────────────────────── Manage Models ─────────────────────────╮                                            
-          │                                                                │                                            
-          │    📦 Total Installed Models: 3                                │                                            
-          │    💾 Total Disk Footprint: 46.0 GB                            │                                            
-          │    🖥️  System RAM Context: 32.0 GB Unified  |  Limit: 24 GB    │                                            
-          │                                                                │                                            
-          ╰────────────────────────────────────────────────────────────────╯                                            
+          ╭─────────────────────── Manage Models ────────────────────────╮                                              
+          │                                                              │                                              
+          │    📦 Total Installed Models: 3                              │                                              
+          │    💾 Total Disk Footprint: 46.0 GB                          │                                              
+          │    🖥️  System RAM Context: 32 GB Unified  |  Limit: 26 GB    │                                              
+          │                                                              │                                              
+          ╰──────────────────────────────────────────────────────────────╯                                              
                                                                                                                         
           ╭──────────────────────────────────────────────────────────────────────────────────────────────────╮          
           │                                                                                                  │          
@@ -31,5 +31,5 @@
                                                                                                                         
                                                                                                                         
                                                                                                                         
-                                                                                                                        
- Apple M-Mock  ·  🟢 16.0/32.0 GB RAM  ·  GPU: 24 GB  |  [d] Download  |  [f] Filter                                    
+       Apple M-Mock  ·  🟢 16.0/32.0 GB RAM  ·  GPU: 24 GB  |  [d] Download  |  [f]                                     
+                                                                             Filter                                     

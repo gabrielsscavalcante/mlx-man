@@ -12,6 +12,7 @@ from rich.console import Group, RenderableType
 from rich.layout import Layout
 from rich.live import Live
 from rich.panel import Panel
+from rich.table import Table
 from rich.text import Text
 from rich.align import Align
 from rich import box
@@ -45,7 +46,13 @@ def _read_key() -> str:
     finally:
         termios.tcsetattr(fd, termios.TCSADRAIN, old)
 
-def build_layout(content: RenderableType, footer: str, width: int, height: int) -> Layout:
+def build_layout(
+    content: RenderableType,
+    footer: str,
+    width: int,
+    height: int,
+    shortcuts: Optional[Dict[str, str]] = None
+) -> Layout:
     if width < 40 or height < 12:
         return Layout(Align.center(Text("Terminal too small", style="red"), vertical="middle"))
         
@@ -54,8 +61,22 @@ def build_layout(content: RenderableType, footer: str, width: int, height: int) 
         Layout(name="body"),
         Layout(name="footer", size=2)
     )
+    
+    table = Table(show_header=False, expand=True, box=None, padding=(0,0))
+    table.add_column("left", justify="left")
+    table.add_column("right", justify="right")
+    
+    left_text = Text()
+    if shortcuts:
+        for key, desc in shortcuts.items():
+            left_text.append(f"[{key}]", style="dim")
+            left_text.append(f" {desc}  ", style="white")
+            
+    right_text = Text(f" {footer}", style="dim white")
+    table.add_row(left_text, right_text)
+    
     layout["body"].update(Align.center(content, vertical="middle"))
-    layout["footer"].update(Align(Text(f" {footer}", style="dim white", justify="right"), vertical="bottom"))
+    layout["footer"].update(Align(table, vertical="bottom"))
     return layout
 
 def tui_select(
@@ -95,7 +116,7 @@ def tui_select(
             )
             
             body = Group(header, Text(""), panel)
-            live.update(build_layout(body, footer, live.console.width, live.console.height))
+            live.update(build_layout(body, footer, live.console.width, live.console.height, shortcuts={"↑↓": "navigate", "enter": "select", "esc/q": "back"}))
             
             key = _read_key()
             if key == 'up':
@@ -135,7 +156,7 @@ def tui_confirm(
             )
             
             body = Group(header, Text(""), panel)
-            live.update(build_layout(body, footer, live.console.width, live.console.height))
+            live.update(build_layout(body, footer, live.console.width, live.console.height, shortcuts={"↑↓": "toggle", "enter": "confirm", "esc/q": "cancel"}))
             
             key = _read_key()
             if key == 'up':
@@ -144,7 +165,7 @@ def tui_confirm(
                 idx = (idx + 1) % len(choices)
             elif key == 'enter':
                 return choices[idx][1]
-            elif key == 'escape':
+            elif key in ('escape', 'q'):
                 return False
 
 def tui_text_input(
@@ -172,7 +193,7 @@ def tui_text_input(
             )
             
             body = Group(header, Text(""), panel)
-            live.update(build_layout(body, footer, live.console.width, live.console.height))
+            live.update(build_layout(body, footer, live.console.width, live.console.height, shortcuts={"enter": "submit", "esc": "cancel"}))
             
             key = _read_key()
             if key == 'enter':
@@ -220,7 +241,7 @@ def main_menu_select(
             )
             
             body = Group(header, Text(""), panel, Text(""), below_panel)
-            live.update(build_layout(body, footer, live.console.width, live.console.height))
+            live.update(build_layout(body, footer, live.console.width, live.console.height, shortcuts={"↑↓": "navigate", "enter": "select", "esc/q": "quit"}))
             
             key = _read_key()
             if key == 'up':
@@ -231,8 +252,6 @@ def main_menu_select(
                 return items[selectable[idx]][1]
             elif key in ('escape', 'q'):
                 return None
-
-from rich.table import Table
 
 def tui_table_select(
     title: str,
@@ -303,7 +322,13 @@ def tui_table_select(
             
             panel = Panel(table, box=box.ROUNDED, border_style="bright_black", width=100, padding=(1,1))
             body = Group(header, Text(""), panel)
-            live.update(build_layout(body, footer, live.console.width, live.console.height))
+            
+            merged_shortcuts = {"↑↓": "navigate", "enter": "select", "esc/q": "back"}
+            if extra_hotkeys:
+                for k, v in extra_hotkeys.items():
+                    merged_shortcuts[k] = str(v)
+            
+            live.update(build_layout(body, footer, live.console.width, live.console.height, shortcuts=merged_shortcuts))
             
             key = _read_key()
             if key == 'up':

@@ -7,7 +7,7 @@ from rich.text import Text
 from rich.table import Table
 
 from mlx_man.tui_engine import build_layout
-from mlx_man.cli_dashboard import get_banner, get_shortcuts_line, get_tip_line
+from mlx_man.cli_dashboard import get_banner, get_tip_line
 from mlx_man.main import MENU_ITEMS
 from mlx_man.ram_manager_view import get_header_group, get_process_row
 from mlx_man.process_service import ProcessInfo
@@ -50,8 +50,6 @@ def test_main_menu_snapshot(m1, m2, m3, m4, m5):
     console = Console(width=100, height=30, record=True, force_terminal=True)
     
     below_panel = Group(
-        get_shortcuts_line(),
-        "\n",
         get_tip_line(),
     )
     

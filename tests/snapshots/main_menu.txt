@@ -1,6 +1,7 @@
                                                                                                     
                                                                                                     
                                                                                                     
+                                                                                                    
           ███╗   ███╗ ██╗      ██╗  ██╗           ███╗   ███╗  █████╗  ███╗   ██╗                   
           ████╗ ████║ ██║      ╚██╗██╔╝           ████╗ ████║ ██╔══██╗ ████╗  ██║                   
           ██╔████╔██║ ██║       ╚███╔╝   ██████╗  ██╔████╔██║ ███████║ ██╔██╗ ██║                   
@@ -19,12 +20,11 @@
        │    ⏻   Exit                                        │                                       
        ╰────────────────────────────────────────────────────╯                                       
                                                                                                     
-                            ↑↓ navigate    enter select    ctrl+c quit                              
-                                                                                                    
-                                                                                                    
        ● Tip  Connect external coding tools or agents to MLX-Man's local server on port 8080        
                                                                                                     
                                                                                                     
                                                                                                     
                                                                                                     
- Apple M-Mock  ·  🟢 16.0/32.0 GB RAM  ·  GPU: 24 GB                                                
+                                                                                                    
+   Apple M-Mock  ·  🟢 16.0/32.0 GB RAM  ·  GPU: 24                                                 
+                                                 GB                                                 

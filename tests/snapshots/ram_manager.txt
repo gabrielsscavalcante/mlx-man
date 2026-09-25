@@ -26,5 +26,5 @@
                                                                                                                         
                                                                                                                         
                                                                                                                         
-                                                                                                                        
- Apple M-Mock  ·  🟡 8.0/32.0 GB RAM  ·  GPU: 24 GB                                                                     
+   Apple M-Mock  ·  🟡 8.0/32.0 GB RAM  ·  GPU: 24                                                                      
+                                                GB                                                                      

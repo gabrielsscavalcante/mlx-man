@@ -114,15 +114,6 @@ def get_main_menu_panel() -> Align:
     return Align.center(panel)
 
 
-def get_shortcuts_line() -> Align:
-    """Returns the OpenCode-style muted keyboard shortcuts line."""
-    shortcuts = Text.from_markup(
-        "[dim]↑↓[/dim] navigate    "
-        "[dim]enter[/dim] select    "
-        "[dim]ctrl+c[/dim] quit"
-    )
-    return Align.center(shortcuts)
-
 
 # Rotating tips for visual interest
 _TIPS = [

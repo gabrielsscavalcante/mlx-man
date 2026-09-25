@@ -86,16 +86,6 @@ def test_banner_renders_without_error():
     assert "not an AI agent" in output
 
 
-def test_shortcuts_renders_without_error():
-    """The shortcuts line renders without raising exceptions."""
-    from rich.console import Console
-    from mlx_man.cli_dashboard import get_shortcuts_line
-
-    c = Console(record=True, width=100)
-    c.print(get_shortcuts_line())
-    output = c.export_text()
-    assert "navigate" in output
-
 
 def test_tip_renders_without_error():
     """The tip line renders without raising exceptions."""
@@ -143,7 +133,7 @@ def test_menu_panel_renders_inside_centered_frame():
     from rich.panel import Panel
     from rich.align import Align
     from rich import box
-    from mlx_man.cli_dashboard import get_banner, get_shortcuts_line, get_tip_line
+    from mlx_man.cli_dashboard import get_banner, get_tip_line
 
     items = [
         ("🚀  Run LLM Server", "run"),
@@ -176,8 +166,6 @@ def test_menu_panel_renders_inside_centered_frame():
         Text(""),
         Align.center(panel),
         Text(""),
-        get_shortcuts_line(),
-        Text(""),
         get_tip_line(),
     )
 
@@ -189,4 +177,3 @@ def test_menu_panel_renders_inside_centered_frame():
     assert "╰" in output
     assert "Run LLM Server" in output
     assert "Exit" in output
-    assert "navigate" in output
