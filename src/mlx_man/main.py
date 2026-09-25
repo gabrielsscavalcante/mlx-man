@@ -12,12 +12,10 @@ from rich.text import Text
 
 from mlx_man.cli_dashboard import (
     get_banner,
-    get_shortcuts_line,
     get_tip_line,
     get_system_status_footer,
     console,
 )
-from mlx_man.cli_select import centered_select
 
 from mlx_man.cli_actions import (
     action_run_server,
@@ -49,8 +47,6 @@ def main():
     try:
         while True:
             below_panel = Group(
-                get_shortcuts_line(),
-                Text(""),
                 get_tip_line(),
             )
 

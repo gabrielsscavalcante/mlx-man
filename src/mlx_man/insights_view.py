@@ -186,7 +186,7 @@ def run_insights_history():
     while True:
         models = gather_models()
         header_view = get_insights_view(models, current_filter)
-        footer_text = get_system_status_footer() + "  |  [Enter] Remove  |  [f] Filter"
+        footer_text = get_system_status_footer()
 
         filtered_models = [m for m in models if current_filter == "All" or m.category == current_filter]
         sorted_models = sorted(filtered_models, key=lambda x: (x.times_used, x.last_used or datetime.datetime.min))

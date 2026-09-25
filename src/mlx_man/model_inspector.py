@@ -215,7 +215,7 @@ def run_model_inspector():
         filtered = [m for m in models if current_filter == "All" or m.role == current_filter]
 
         header_view = render_model_manager(models, current_filter)
-        footer_text = get_system_status_footer() + "  |  [d] Download  |  [f] Filter"
+        footer_text = get_system_status_footer()
 
         if not filtered:
             choice = tui_select(

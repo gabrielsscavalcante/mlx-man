@@ -1,0 +1,35 @@
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                     ╭───────────────── QwQ 32B ──────────────────╮                                     
+                                     │                                            │                                     
+                                     │    Model ID: mlx-community/QwQ-32B-4bit    │                                     
+                                     │    Disk Size: 18.0 GB                      │                                     
+                                     │    RAM Est: 19.0 GB                        │                                     
+                                     │    Quant: 4-bit                            │                                     
+                                     │                                            │                                     
+                                     │                                            │                                     
+                                     ╰────────────────────────────────────────────╯                                     
+                                                                                                                        
+                                     ╭────────────────────────────────────────────╮                                     
+                                     │                                            │                                     
+                                     │  ▸ ▶️  Run Model (Chat)                    │                                     
+                                     │    🌐 Serve Model (API)                    │                                     
+                                     │    ℹ️  View Detailed Metadata              │                                     
+                                     │    🗑️  Delete Model                        │                                     
+                                     │    ⬅️  Return to Model List                │                                     
+                                     │                                            │                                     
+                                     ╰────────────────────────────────────────────╯                                     
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+[↑↓] navigate  [enter] select  [esc/q] back   Apple M-Mock  ·  🟢 16.0/32 GB RAM  ·  GPU: 24 GB                         
