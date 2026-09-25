@@ -231,3 +231,85 @@ def main_menu_select(
                 return items[selectable[idx]][1]
             elif key in ('escape', 'q'):
                 return None
+
+from rich.table import Table
+
+def tui_table_select(
+    title: str,
+    columns: List[dict],
+    data: List[Any],
+    row_func: Callable[[Any], List[Any]],
+    header: RenderableType,
+    footer: str,
+    page_size: int = 15
+) -> Optional[Any]:
+    """State machine for UP/DOWN selection inside a paginated Rich Table."""
+    if not data:
+        return None
+        
+    idx = 0
+    
+    with Live(screen=True, refresh_per_second=10) as live:
+        while True:
+            # Pagination
+            start_idx = max(0, idx - page_size // 2)
+            end_idx = min(len(data), start_idx + page_size)
+            if end_idx - start_idx < page_size:
+                start_idx = max(0, end_idx - page_size)
+                
+            page_data = data[start_idx:end_idx]
+            
+            table_title = f"{title} (Showing {start_idx+1}-{end_idx} of {len(data)})" if len(data) > page_size else title
+            
+            table = Table(
+                title=table_title,
+                title_style="bold white",
+                title_justify="left",
+                box=None,
+                header_style="dim white",
+                expand=True,
+                padding=(0, 2)
+            )
+            for col in columns:
+                table.add_column(
+                    col["header"],
+                    style=col.get("style", ""),
+                    justify=col.get("justify", "left"),
+                    width=col.get("width", None),
+                    min_width=col.get("min_width", None)
+                )
+                
+            for i, item in enumerate(page_data):
+                actual_idx = start_idx + i
+                row = row_func(item)
+                
+                # If selected, wrap each cell in the highlight style
+                if actual_idx == idx:
+                    styled_row = []
+                    for cell in row:
+                        if isinstance(cell, str):
+                            t = Text(cell)
+                            t.stylize("bold black on white")
+                            styled_row.append(t)
+                        elif isinstance(cell, Text):
+                            cell.style = "bold black on white"
+                            styled_row.append(cell)
+                        else:
+                            styled_row.append(cell)
+                    table.add_row(*styled_row, style="bold black on white")
+                else:
+                    table.add_row(*row)
+            
+            panel = Panel(table, box=box.ROUNDED, border_style="bright_black", width=100, padding=(1,1))
+            body = Group(header, Text(""), panel)
+            live.update(build_layout(body, footer, live.console.width, live.console.height))
+            
+            key = _read_key()
+            if key == 'up':
+                idx = (idx - 1) % len(data)
+            elif key == 'down':
+                idx = (idx + 1) % len(data)
+            elif key == 'enter':
+                return data[idx]
+            elif key in ('escape', 'q'):
+                return None

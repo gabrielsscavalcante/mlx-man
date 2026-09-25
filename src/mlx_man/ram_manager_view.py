@@ -9,7 +9,7 @@ from rich.text import Text
 from mlx_man.process_service import ProcessService, ProcessInfo
 from mlx_man.ui_components import create_header_panel, create_data_table, create_warning_panel
 from mlx_man.cli_dashboard import get_system_status_footer
-from mlx_man.tui_engine import tui_select, tui_confirm, tui_text_input
+from mlx_man.tui_engine import tui_table_select, tui_confirm, tui_text_input
 
 console = Console()
 
@@ -29,33 +29,22 @@ def get_header_group(mem_info: dict, reclaimable_mb: float) -> Group:
     
     return create_header_panel(Align.center(header_text), title="Clean Up RAM")
 
-def get_process_table(processes: list[ProcessInfo]):
-    columns = [
-        {"header": "PID", "style": "dim", "width": 8},
-        {"header": "Process Name", "style": "bold white", "min_width": 20},
-        {"header": "RAM Usage", "style": "white", "justify": "right", "width": 12},
-        {"header": "Risk Level", "width": 12},
-        {"header": "Description / Impact", "style": "dim"}
-    ]
-    table = create_data_table(title="Running Processes", columns=columns)
 
-    for p in processes:
-        if p.safety == "Safe":
-            risk = "[green]Safe[/green]"
-        elif p.safety == "Caution":
-            risk = "[yellow]Caution[/yellow]"
-        else:
-            risk = "[red]Protected[/red]"
-            
-        table.add_row(
-            str(p.pid),
-            p.name,
-            f"{int(p.memory_mb)} MB",
-            risk,
-            p.description
-        )
+def get_process_row(p: ProcessInfo):
+    if p.safety == "Safe":
+        risk = Text("Safe", style="green")
+    elif p.safety == "Caution":
+        risk = Text("Caution", style="yellow")
+    else:
+        risk = Text("Protected", style="red")
         
-    return table
+    return [
+        str(p.pid),
+        p.name,
+        f"{int(p.memory_mb)} MB",
+        risk,
+        Text(p.description, style="dim")
+    ]
 
 def run_ram_manager(expert_mode: bool = False):
     while True:
@@ -67,26 +56,29 @@ def run_ram_manager(expert_mode: bool = False):
             return
 
         reclaimable_mb = sum(p.memory_mb for p in processes if p.safety != "Danger")
-        
-        # Build header Group containing the header panel and the process table
         header_panel = get_header_group(mem_info, reclaimable_mb)
-        table = get_process_table(processes)
-        header = Group(header_panel, Text(""), table)
         
-        choices = list(processes) + ["cancel"]
+        columns = [
+            {"header": "PID", "style": "dim", "width": 8},
+            {"header": "Process Name", "style": "bold white", "min_width": 20},
+            {"header": "RAM Usage", "style": "white", "justify": "right", "width": 12},
+            {"header": "Risk Level", "width": 12},
+            {"header": "Description / Impact", "style": "dim"}
+        ]
         
         try:
-            selected = tui_select(
-                title="Select a process to manage:",
-                choices=choices,
-                format_func=lambda x: "Exit" if x == "cancel" else f"{x.name} ({x.pid})",
-                header=header,
+            selected = tui_table_select(
+                title="Running Processes",
+                columns=columns,
+                data=processes,
+                row_func=get_process_row,
+                header=header_panel,
                 footer=get_system_status_footer(),
             )
         except KeyboardInterrupt:
             break
             
-        if not selected or selected == "cancel":
+        if not selected:
             break
             
         p: ProcessInfo = selected

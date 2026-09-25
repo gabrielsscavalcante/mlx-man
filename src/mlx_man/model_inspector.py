@@ -218,7 +218,12 @@ def render_model_manager(models: List[ModelMetadata], filter_role: str = "All") 
     ]
     table = create_data_table(columns=columns)
 
+    displayed_count = 0
     for m in models:
+        if displayed_count >= 8:
+            table.add_row("...", "...", "...", "...", "...")
+            break
+            
         if filter_role != "All" and m.role != filter_role:
             continue
 
@@ -235,6 +240,7 @@ def render_model_manager(models: List[ModelMetadata], filter_role: str = "All") 
 
         table.add_row(name_cell, role_cell, cost_cell, tier_badge, m.best_for)
         table.add_row("", "", "", "", "")  # Spacing
+        displayed_count += 1
 
     components = [header_panel, Text("")]
     if total_models > 0:

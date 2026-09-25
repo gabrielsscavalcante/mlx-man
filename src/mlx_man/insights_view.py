@@ -188,6 +188,8 @@ def get_insights_view(models: List[ModelInfo], category_filter: str = "All") -> 
     
     displayed_count = 0
     for m in sorted_models:
+        if displayed_count >= 8:
+            table.add_row('...', '...', '...', '...', '...'); break
         if category_filter != "All" and m.category != category_filter:
             continue
             
