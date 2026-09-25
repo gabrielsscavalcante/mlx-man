@@ -21,7 +21,7 @@ def _read_key() -> str:
     fd = sys.stdin.fileno()
     old = termios.tcgetattr(fd)
     try:
-        tty.setraw(fd)
+        tty.setcbreak(fd)
         ch = sys.stdin.read(1).encode('utf-8')
         
         if ch == b'\x1b':
@@ -81,8 +81,8 @@ def tui_select(
             for i, choice in enumerate(choices):
                 label = format_func(choice)
                 if i == idx:
-                    padded = f" {label}".ljust(inner_width)
-                    menu_lines.append(Text(padded, style="bold black on white"))
+                    t = Text(f" {label}"); t.pad_right(inner_width); menu_lines.append(t); t.stylize("bold black on white")
+
                 else:
                     menu_lines.append(Text(f" {label}", style="dim white"))
                     
@@ -122,7 +122,7 @@ def tui_confirm(
             
             for i, (label, val) in enumerate(choices):
                 if i == idx:
-                    menu_lines.append(Text(f" {label}".ljust(40), style="bold black on white"))
+                    t = Text(f" {label}"); t.pad_right(40); t.stylize("bold black on white"); menu_lines.append(t)
                 else:
                     menu_lines.append(Text(f" {label}", style="dim white"))
                     
@@ -206,8 +206,8 @@ def main_menu_select(
                 else:
                     label, val = item
                     if i == selectable[idx]:
-                        padded = f" ▸ {label}".ljust(inner_width)
-                        menu_lines.append(Text(padded, style="bold black on white"))
+                        t = Text(f" ▸ {label}"); t.pad_right(inner_width); t.stylize("bold black on white"); menu_lines.append(t)
+
                     else:
                         menu_lines.append(Text(f"   {label}", style="dim white"))
                         
