@@ -1,0 +1,15 @@
+╭──────────────────────────────────────── MLX Native Chat ─────────────────────────────────────────╮
+│ Started Chat: Qwen2.5-7B-Instruct                                                                │
+│ Type your message below. Type 'quit' or 'exit' to end.                                           │
+╰──────────────────────────────────────────────────────────────────────────────────────────────────╯
+
+👤 You:
+Can you explain how backpropagation works in one sentence?
+
+🤖 Assistant:
+Backpropagation is an algorithm that fine-tunes the weights of a neural network based on the error 
+rate obtained in the previous epoch (i.e., iteration) by using the chain rule of calculus to 
+calculate gradients backward from the output layer to the input layer.
+
+👤 You:
+> █

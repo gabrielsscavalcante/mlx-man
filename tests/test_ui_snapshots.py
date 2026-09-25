@@ -616,3 +616,82 @@ def test_search_hub_results_snapshot(m1, m2, m3, m4):
     
     console.print(layout)
     assert_snapshot(console, "search_hub_results")
+
+@patch('mlx_man.cli_dashboard.get_chip_name', return_value="Apple M-Mock")
+@patch('mlx_man.cli_dashboard.get_free_ram_gb', return_value=16.0)
+@patch('mlx_man.cli_dashboard.get_total_ram_gb', return_value=32)
+@patch('mlx_man.cli_dashboard.get_current_gpu_limit', return_value="24 GB")
+def test_chat_history_snapshot(m1, m2, m3, m4):
+    from mlx_man.cli_dashboard import get_system_status_footer
+    from mlx_man.ui_components import create_header_panel
+    from mlx_man.tui_engine import build_layout
+    from rich.console import Console, Group
+    from rich.text import Text
+    from rich.table import Table
+    from rich.panel import Panel
+    from rich import box
+    
+    console = Console(width=120, height=35, record=True, force_terminal=True)
+    
+    header = create_header_panel(Text("2 Past Sessions", style="green"), "Chat History")
+    
+    table = Table(
+        title="Select a chat:",
+        title_style="bold white",
+        title_justify="left",
+        box=box.SIMPLE,
+        header_style="dim white",
+        expand=True,
+        padding=(0, 2),
+        border_style="bright_black"
+    )
+    
+    table.add_column("Date", style="bold white")
+    table.add_column("Model", style="cyan")
+    table.add_column("Msgs", justify="right", style="dim")
+    table.add_column("Excerpt", style="dim")
+    
+    # Selected row
+    row1 = [
+        Text("2024-01-02 15:30", style="bold black on white"),
+        Text("Llama-3.1-8B-Instruct", style="bold black on white"),
+        Text("8", style="bold black on white"),
+        Text("Write a fast inverse square root func...", style="bold black on white")
+    ]
+    table.add_row(*row1, style="bold black on white")
+    
+    row2 = [
+        "2024-01-01 12:00",
+        "Qwen2.5-7B-Instruct",
+        "2",
+        "How do I reverse a string in python?... "
+    ]
+    table.add_row(*row2)
+    
+    panel = Panel(table, box=box.ROUNDED, border_style="bright_black", width=110, padding=(1,1))
+    body = Group(header, Text(""), panel)
+    
+    layout = build_layout(body, get_system_status_footer(), 120, 35, shortcuts={"↑↓": "navigate", "enter": "view/resume", "e": "export", "d": "delete", "esc/q": "back"})
+    
+    console.print(layout)
+    assert_snapshot(console, "chat_history")
+
+def test_native_chat_snapshot():
+    from rich.console import Console
+    from rich.panel import Panel
+    from rich.text import Text
+    from rich.markdown import Markdown
+    
+    console = Console(width=100, record=True, force_terminal=True)
+    
+    console.print(Panel("Started Chat: [bold cyan]Qwen2.5-7B-Instruct[/bold cyan]\n[dim]Type your message below. Type 'quit' or 'exit' to end.[/dim]", title="MLX Native Chat", border_style="green"))
+    console.print()
+    console.print("[bold blue]👤 You:[/bold blue]")
+    console.print("Can you explain how backpropagation works in one sentence?\n")
+    
+    console.print("[bold green]🤖 Assistant:[/bold green]")
+    console.print("Backpropagation is an algorithm that fine-tunes the weights of a neural network based on the error rate obtained in the previous epoch (i.e., iteration) by using the chain rule of calculus to calculate gradients backward from the output layer to the input layer.")
+    console.print("\n[bold blue]👤 You:[/bold blue]")
+    console.print("> █") # Fake cursor
+    
+    assert_snapshot(console, "native_chat")
