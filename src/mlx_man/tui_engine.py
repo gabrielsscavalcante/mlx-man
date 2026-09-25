@@ -17,7 +17,7 @@ from rich.text import Text
 from rich.align import Align
 from rich import box
 
-def _read_key() -> str:
+def _read_key() -> str:  # pragma: no cover
     """Reads a single keypress from stdin in raw mode."""
     fd = sys.stdin.fileno()
     old = termios.tcgetattr(fd)
