@@ -4,15 +4,14 @@ import datetime
 from typing import List, Optional, Dict
 from dataclasses import dataclass
 import questionary
-from rich.console import Console
-from rich.table import Table
-from rich.panel import Panel
+from rich.console import Console, Group
 from rich.text import Text
 
-from mlx_man.model_registry import get_registry_entry, ROLE_INFO
+from mlx_man.model_registry import get_registry_entry
 from mlx_man.model_manager import get_installed_models, delete_model_from_disk
-from mlx_man.cli_dashboard import console
 from mlx_man.usage_tracker import HISTORY_FILE
+from mlx_man.ui_components import create_header_panel, create_data_table, create_warning_panel
+from mlx_man.cli_layout import render_centered_view
 
 console = Console()
 
@@ -105,9 +104,6 @@ def gather_models() -> List[ModelInfo]:
         
     return models
 
-from rich.console import Group
-from mlx_man.cli_layout import render_page
-
 def generate_bar(value: float, total: float, width: int = 20, color: str = "white") -> str:
     if total <= 0:
         return f"[{color}]" + "░" * width + "[/]"
@@ -138,17 +134,11 @@ def get_insights_view(models: List[ModelInfo], category_filter: str = "All") -> 
     summary_text.append("📊 Total Inferences: ", style="bold magenta")
     summary_text.append(f"{total_uses}\n", style="bold white")
     
-    summary_text.append("💾 Total Disk Usage: ", style="bold cyan")
+    summary_text.append("💾 Total Disk Usage: ", style="bold white")
     summary_text.append(f"{total_size_gb:.1f} GB ", style="bold white")
     summary_text.append(f"across {num_models} installed models", style="dim")
     
-    panel = Panel(
-        summary_text,
-        title="[bold cyan]Insights & History[/]",
-        border_style="cyan",
-        expand=False,
-        padding=(1, 4)
-    )
+    panel = create_header_panel(summary_text, "Insights & History")
     
     components = [panel, Text("")]
 
@@ -160,11 +150,13 @@ def get_insights_view(models: List[ModelInfo], category_filter: str = "All") -> 
             cat_stats[cat]["uses"] += m.times_used
             cat_stats[cat]["size"] += m.size_gb
         
-        breakdown_table = Table(title="[bold white]Usage Distribution by Category[/]", box=None, padding=(0, 2), expand=False)
-        breakdown_table.add_column("Category", style="bold")
-        breakdown_table.add_column("Usage Chart", justify="left")
-        breakdown_table.add_column("Total Uses", justify="right")
-        breakdown_table.add_column("Disk Space", justify="right", style="dim")
+        breakdown_columns = [
+            {"header": "Category", "style": "bold"},
+            {"header": "Usage Chart", "justify": "left"},
+            {"header": "Total Uses", "justify": "right"},
+            {"header": "Disk Space", "justify": "right", "style": "dim"},
+        ]
+        breakdown_table = create_data_table(title="Usage Distribution by Category", columns=breakdown_columns)
         
         for cat in ["Reasoning", "Build", "General"]:
             stats = cat_stats[cat]
@@ -182,12 +174,14 @@ def get_insights_view(models: List[ModelInfo], category_filter: str = "All") -> 
         components.append(Text(""))
 
     # 3. Table of Models
-    table = Table(title=f"[bold white]Installed Models[/] [dim]({category_filter})[/]", box=None, padding=(0, 2), expand=False)
-    table.add_column("Model Name", style="bold white")
-    table.add_column("Category", justify="center")
-    table.add_column("Size", justify="right", style="dim")
-    table.add_column("Uses", justify="right")
-    table.add_column("Last Used", style="dim")
+    model_columns = [
+        {"header": "Model Name", "style": "bold white"},
+        {"header": "Category", "justify": "center"},
+        {"header": "Size", "justify": "right", "style": "dim"},
+        {"header": "Uses", "justify": "right"},
+        {"header": "Last Used", "style": "dim"},
+    ]
+    table = create_data_table(title=f"Installed Models [dim]({category_filter})[/]", columns=model_columns)
 
     # Sort models: least used first (0 usage at top) to encourage deletion of unused models
     sorted_models = sorted(models, key=lambda m: (m.times_used, m.last_used or datetime.datetime.min))
@@ -223,7 +217,6 @@ def get_insights_view(models: List[ModelInfo], category_filter: str = "All") -> 
 
 def render_insights_view(models: List[ModelInfo], category_filter: str = "All") -> None:
     """Legacy function to appease old tests that mocked console."""
-    console.clear()
     console.print(get_insights_view(models, category_filter))
 
 def run_insights_history():
@@ -232,7 +225,7 @@ def run_insights_history():
         models = gather_models()
         view = get_insights_view(models, current_filter)
         
-        render_page(view, top_padding=-1)
+        render_centered_view(view, prompt_lines=5)
         
         choice = questionary.select(
             "Select action:",
@@ -281,10 +274,16 @@ def run_insights_history():
                 try:
                     freed = delete_model_from_disk(selected_model.repo_id)
                     freed_gb = format_bytes_gb(freed)
-                    console.print(f"\n  [green]✔  Successfully deleted {selected_model.name}. Reclaimed {freed_gb:.1f} GB.[/]")
+                    msg = Text()
+                    msg.append(f"✔  Successfully deleted {selected_model.name}.\n", style="green")
+                    msg.append(f"Reclaimed {freed_gb:.1f} GB.\n\n", style="white")
+                    msg.append("Press Enter to continue...", style="dim")
+                    render_centered_view(create_warning_panel(msg, title="Success"), prompt_lines=0)
                 except Exception as e:
-                    console.print(f"\n  [red]✖  Failed to delete: {e}[/]")
+                    msg = Text()
+                    msg.append(f"✖  Failed to delete: {e}\n\n", style="red")
+                    msg.append("Press Enter to continue...", style="dim")
+                    render_centered_view(create_warning_panel(msg, title="Failure"), prompt_lines=0)
                 
                 # Pause before refreshing
-                console.print("\n  [dim]Press Enter to continue...[/]", end="")
                 input()

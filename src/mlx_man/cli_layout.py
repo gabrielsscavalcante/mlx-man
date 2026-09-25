@@ -62,7 +62,9 @@ def get_renderable_height(console: Console, renderable: RenderableType) -> int:
     return len(capture.get().splitlines())
 
 
-def draw_footer(status_text: str, version: str = "v0.3.0"):
+from mlx_man import __version__ as CLI_VERSION
+
+def draw_footer(status_text: str):
     """
     Draws a discreet, persistent footer at the absolute bottom of the terminal.
 
@@ -79,7 +81,7 @@ def draw_footer(status_text: str, version: str = "v0.3.0"):
     color_end = "\033[0m"
 
     # Build right side: system status · version
-    right_text = f"{status_text}  ·  {version}"
+    right_text = f"{status_text}  ·  v{CLI_VERSION}"
 
     # Truncate left text if terminal is too small
     max_left = cols - len(right_text) - 4
@@ -121,7 +123,8 @@ def render_centered_view(
     sys.__stdout__.flush()
 
     # 2. Draw sticky footer
-    draw_footer(footer_status)
+    if footer_status:
+        draw_footer(footer_status)
 
     # 3. Get terminal dimensions
     size = get_real_terminal_size()
@@ -135,7 +138,7 @@ def render_centered_view(
 
     # 6. Calculate vertical padding for true center
     #    Account for: content + prompt lines below + 1 footer line
-    total_used = content_height + prompt_lines + 1
+    total_used = content_height + prompt_lines + (1 if footer_status else 0)
     available = rows - total_used
     top_padding = max(0, available // 2)
 
@@ -145,16 +148,3 @@ def render_centered_view(
 
     # 8. Render the content block, centered horizontally
     render_console.print(Align.center(content_block))
-
-
-# Legacy compatibility alias
-def render_page(renderable: RenderableType, top_padding: int = -1):
-    """
-    Legacy wrapper for backward compatibility with existing code.
-    Renders centered content with the old interface signature.
-    """
-    from mlx_man.cli_dashboard import get_system_status_footer
-    render_centered_view(
-        content_block=renderable,
-        footer_status=get_system_status_footer(),
-    )

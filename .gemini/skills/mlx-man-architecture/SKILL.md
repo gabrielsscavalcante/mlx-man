@@ -193,3 +193,12 @@ python -m mlx_man    # Package invocation
 3. **Process killing** → 3-tier safety classification (Safe/Caution/Danger)
 4. **Long operations** (model downloads) → progress indicators to prevent stall perception
 5. **GPU memory** → offer `sudo sysctl iogpu.wired_limit_mb=N` when running heavy models
+
+## UI/UX Standardization
+
+All interactive screens must follow the "Spotlight-style" floating window aesthetic.
+
+1. **No Manual Terminal Clears:** Never use `console.clear()` or print ANSI sequences like `\033[H\033[2J`.
+2. **Central Rendering:** Always build a `rich.console.Group` containing your layout and render it via `render_centered_view(layout, prompt_lines=X)` from `mlx_man.cli_layout`. This handles clearing the screen, centering the content, and drawing the sticky footer correctly.
+3. **Reusable Components:** Never instantiate `Panel` or `Table` directly. Always import and use the standard factories from `mlx_man.ui_components` (e.g., `create_header_panel`, `create_data_table`, `create_warning_panel`) to guarantee uniform muted aesthetics (`bright_black` borders, `dim` text).
+4. **Color Palette:** Avoid loud colors like bright cyan or magenta for layout borders. Stick to `white`, `dim`, and `bright_black`. Use colors like `yellow`, `red`, and `green` strictly for semantic badges, success/error states, or warnings.
