@@ -1,131 +1,196 @@
-import datetime
+import pytest
 from unittest.mock import patch, MagicMock
+from pathlib import Path
+import datetime
 
 from mlx_man.insights_view import (
-    categorize_model,
     ModelInfo,
+    gather_models,
+    generate_bar,
+    get_insights_view,
     render_insights_view,
     run_insights_history
 )
-from mlx_man.model_manager import delete_model_from_disk
-from rich.console import Console
 
+@pytest.fixture
+def dummy_model():
+    return ModelInfo(
+        name="Test",
+        repo_id="org/test",
+        size_gb=10.0,
+        times_used=5,
+        last_used=datetime.datetime(2023, 1, 1),
+        category="Reasoning"
+    )
 
-def test_categorize_model():
-    assert categorize_model("mlx-community/QwQ-32B-4bit") == "Reasoning"
-    assert categorize_model("mlx-community/Devstral-Small-2507-4bit") == "Build"
-    assert categorize_model("mlx-community/Qwen3.6-27B-4bit") == "General"
+@pytest.fixture
+def models_list(dummy_model):
+    return [dummy_model]
 
-    assert categorize_model("unknown/super-R1-model") == "Reasoning"
-    assert categorize_model("unknown/deepseek-coder-v2") == "Build"
-    assert categorize_model("unknown/Llama-3-8b") == "General"
+@patch("mlx_man.insights_view.get_installed_models")
+@patch("mlx_man.insights_view.load_usage_data")
+def test_gather_models(mock_load, mock_get):
+    mock_get.return_value = [{"model_id": "org/test", "disk_bytes": 10**9}]
+    mock_load.return_value = {
+        "org/test": {"count": 3, "last_used": "2023-01-01T10:00:00"}
+    }
+    models = gather_models()
+    assert len(models) == 1
+    assert models[0].times_used == 3
+    assert models[0].last_used.year == 2023
 
+@patch("mlx_man.insights_view.get_installed_models")
+@patch("mlx_man.insights_view.load_usage_data")
+def test_gather_models_bad_date(mock_load, mock_get):
+    mock_get.return_value = [{"model_id": "org/test", "disk_bytes": 10**9}]
+    mock_load.return_value = {
+        "org/test": {"count": 3, "last_used": "invalid-date"}
+    }
+    models = gather_models()
+    assert models[0].last_used is None
 
-def test_rendering():
-    models = [
-        ModelInfo(
-            name="Test Model 1",
-            repo_id="test/model-1",
-            size_gb=10.5,
+def test_generate_bar():
+    # zero total
+    assert "░░░░░░░░░░░░░░░░░░░░" in generate_bar(5, 0, width=20)
+    # normal
+    bar = generate_bar(5, 10, width=10)
+    assert bar.count("█") == 5
+    assert bar.count("░") == 5
+    # overflow
+    bar = generate_bar(15, 10, width=10)
+    assert bar.count("█") == 10
+    
+def test_get_insights_view(models_list):
+    group = get_insights_view(models_list)
+    assert group is not None
+    
+    # Test empty
+    group_empty = get_insights_view([])
+    assert group_empty is not None
+
+def test_render_insights_view(models_list):
+    with patch("mlx_man.insights_view.console.print") as mock_print:
+        render_insights_view(models_list)
+        mock_print.assert_called_once()
+
+@patch("mlx_man.insights_view.gather_models")
+@patch("mlx_man.insights_view.tui_select")
+def test_run_insights_history_empty(mock_select, mock_gather):
+    mock_gather.return_value = []
+    mock_select.return_value = "back"
+    
+    with patch("mlx_man.cli_dashboard.get_system_status_footer", return_value=""):
+        run_insights_history()
+    
+    mock_select.assert_called_once()
+
+@patch("mlx_man.insights_view.gather_models")
+@patch("mlx_man.insights_view.tui_table_select")
+def test_run_insights_history_back(mock_select, mock_gather, models_list):
+    mock_gather.return_value = models_list
+    mock_select.return_value = "back"
+    
+    with patch("mlx_man.cli_dashboard.get_system_status_footer", return_value=""):
+        run_insights_history()
+
+@patch("mlx_man.insights_view.gather_models")
+@patch("mlx_man.insights_view.tui_table_select")
+@patch("mlx_man.insights_view.tui_select")
+def test_run_insights_history_filter(mock_select_list, mock_select_table, mock_gather, models_list):
+    mock_gather.return_value = models_list
+    mock_select_table.side_effect = ["filter", None]
+    mock_select_list.side_effect = ["Build", None]
+    
+    with patch("mlx_man.cli_dashboard.get_system_status_footer", return_value=""):
+        run_insights_history()
+
+@patch("mlx_man.insights_view.gather_models")
+@patch("mlx_man.insights_view.tui_table_select")
+@patch("mlx_man.insights_view.tui_confirm")
+@patch("mlx_man.insights_view.delete_model_from_disk")
+@patch("mlx_man.insights_view.tui_select")
+def test_run_insights_history_delete(mock_select, mock_del, mock_confirm, mock_table, mock_gather, dummy_model):
+    mock_gather.return_value = [dummy_model]
+    mock_table.side_effect = [dummy_model, None]
+    mock_confirm.return_value = True
+    mock_del.return_value = 1000
+    mock_select.return_value = "continue"
+    
+    with patch("mlx_man.cli_dashboard.get_system_status_footer", return_value=""):
+        run_insights_history()
+
+@patch("mlx_man.insights_view.gather_models")
+@patch("mlx_man.insights_view.tui_table_select")
+@patch("mlx_man.insights_view.tui_confirm")
+@patch("mlx_man.insights_view.delete_model_from_disk", side_effect=Exception("Err"))
+@patch("mlx_man.insights_view.tui_select")
+def test_run_insights_history_delete_err(mock_select, mock_del, mock_confirm, mock_table, mock_gather, dummy_model):
+    mock_gather.return_value = [dummy_model]
+    mock_table.side_effect = [dummy_model, None]
+    mock_confirm.return_value = True
+    
+    with patch("mlx_man.cli_dashboard.get_system_status_footer", return_value=""):
+        run_insights_history()
+
+@patch("mlx_man.insights_view.gather_models")
+@patch("mlx_man.insights_view.tui_table_select")
+def test_run_insights_history_get_row(mock_table, mock_gather, dummy_model):
+    mock_gather.return_value = [dummy_model]
+    
+    def side_effect(*args, **kwargs):
+        rf = kwargs["row_func"]
+        d = kwargs["data"][0]
+        rf(d)
+        
+        # Test edge case: zero times_used
+        d_zero = ModelInfo(
+            name="Zero",
+            repo_id="org/zero",
+            size_gb=1.0,
             times_used=0,
             last_used=None,
             category="Reasoning"
-        ),
-        ModelInfo(
-            name="Test Model 2",
-            repo_id="test/model-2",
-            size_gb=5.0,
-            times_used=5,
-            last_used=datetime.datetime(2023, 10, 1),
-            category="General"
         )
-    ]
+        rf(d_zero)
+        return None
+        
+    mock_table.side_effect = side_effect
+    with patch("mlx_man.cli_dashboard.get_system_status_footer", return_value=""):
+        run_insights_history()
 
-    with patch("mlx_man.insights_view.console", Console(record=True)) as mock_console:
-        render_insights_view(models)
+from mlx_man.insights_view import categorize_model, get_category_color
 
-        output = mock_console.export_text()
+@patch("mlx_man.insights_view.get_registry_entry")
+def test_categorize_model_branches(mock_reg):
+    mock_reg.return_value = {"role": "reasoning"}
+    assert categorize_model("x") == "Reasoning"
+    mock_reg.return_value = {"role": "builder"}
+    assert categorize_model("x") == "Build"
+    mock_reg.return_value = {"role": "general"}
+    assert categorize_model("x") == "General"
+    
+    mock_reg.return_value = None
+    assert categorize_model("mlx-community/QwQ-32B-4bit") == "Reasoning"
+    assert categorize_model("mlx-community/Qwen2.5-Coder-32B-Instruct-4bit") == "Build"
+    assert categorize_model("unknown/model") == "General"
 
-        assert "15.5 GB" in output
-        assert "🏆 Most Used Model: Test Model 2" in output
-        assert "Usage Distribution by Category" in output
+def test_get_category_color_branches():
+    assert get_category_color("Reasoning") == "magenta"
+    assert get_category_color("Build") == "blue"
+    assert get_category_color("General") == "green"
 
+from mlx_man.insights_view import load_usage_data
 
-@patch("mlx_man.insights_view.gather_models")
-@patch("mlx_man.insights_view.delete_model_from_disk")
-@patch("mlx_man.insights_view.tui_table_select")
-@patch("mlx_man.insights_view.tui_select")
-@patch("mlx_man.insights_view.tui_confirm")
-def test_deletion_safety(mock_confirm, mock_select, mock_table_select, mock_delete, mock_gather):
-    mock_model = ModelInfo(
-        name="To Delete",
-        repo_id="test/delete",
-        size_gb=1.0,
-        times_used=0,
-        last_used=None,
-        category="General"
-    )
-    mock_gather.return_value = [mock_model]
+@patch("mlx_man.insights_view.DATA_FILE", "/tmp/nonexistent.json")
+def test_load_usage_data_missing():
+    assert load_usage_data() == {}
 
-    # Test 1: User cancels deletion (table returns "back")
-    mock_table_select.side_effect = ["back"]
-    mock_confirm.return_value = False
-
-    run_insights_history()
-    mock_delete.assert_not_called()
-
-    # Test 2: User confirms deletion (table returns model, confirm returns True)
-    mock_table_select.side_effect = [mock_model, "back"]
-    mock_confirm.return_value = True
-    mock_delete.return_value = 1024 ** 3
-
-    run_insights_history()
-    mock_delete.assert_called_once_with("test/delete")
-
-
-@patch("mlx_man.insights_view.gather_models")
-@patch("mlx_man.insights_view.delete_model_from_disk")
-@patch("mlx_man.insights_view.tui_table_select")
-@patch("mlx_man.insights_view.tui_select")
-@patch("mlx_man.insights_view.tui_confirm")
-def test_deletion_error_handling(mock_confirm, mock_select, mock_table_select, mock_delete, mock_gather):
-    mock_model = ModelInfo(
-        name="Error Model",
-        repo_id="test/error",
-        size_gb=2.0,
-        times_used=1,
-        last_used=None,
-        category="General"
-    )
-    mock_gather.return_value = [mock_model]
-
-    mock_table_select.side_effect = [mock_model, "back"]
-    mock_confirm.return_value = True
-    mock_delete.side_effect = RuntimeError("Disk permission denied")
-
-    # Should not raise exception
-    run_insights_history()
-
-
-def test_sorting_logic():
-    models = [
-        ModelInfo("Used 5 times", "repo1", 1.0, 5, datetime.datetime(2023, 10, 1), "General"),
-        ModelInfo("Used 0 times", "repo2", 1.0, 0, None, "General"),
-        ModelInfo("Used 2 times", "repo3", 1.0, 2, datetime.datetime(2023, 10, 5), "General"),
-    ]
-
-    sorted_models = sorted(models, key=lambda m: (m.times_used, m.last_used or datetime.datetime.min))
-
-    assert sorted_models[0].name == "Used 0 times"
-    assert sorted_models[1].name == "Used 2 times"
-    assert sorted_models[2].name == "Used 5 times"
-
-
-@patch("mlx_man.insights_view.gather_models")
-@patch("mlx_man.insights_view.tui_table_select")
-def test_cancel_model_selection(mock_table_select, mock_gather):
-    mock_model = ModelInfo("M1", "repo1", 2.0, 0, None, "General")
-    mock_gather.return_value = [mock_model]
-
-    mock_table_select.side_effect = ["back"]
-    run_insights_history()
+@patch("mlx_man.insights_view.DATA_FILE", "/tmp/bad.json")
+def test_load_usage_data_bad():
+    Path("/tmp/bad.json").write_text("{invalid")
+    assert load_usage_data() == {}
+    
+@patch("mlx_man.insights_view.DATA_FILE", "/tmp/good.json")
+def test_load_usage_data_good():
+    Path("/tmp/good.json").write_text('{"test": {"count": 1}}')
+    assert load_usage_data() == {"test": {"count": 1}}

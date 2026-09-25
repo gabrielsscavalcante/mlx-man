@@ -76,5 +76,5 @@ def main():
     if goodbye:
         print("\n  \033[32m✔\033[0m  Goodbye! 👋\n")
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     main()

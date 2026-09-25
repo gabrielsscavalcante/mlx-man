@@ -417,7 +417,7 @@ def download_model():
     input("\nPress Enter to continue...")
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     try:
         run_model_inspector()
     except KeyboardInterrupt:

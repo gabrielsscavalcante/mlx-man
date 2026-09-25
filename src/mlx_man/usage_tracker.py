@@ -82,7 +82,7 @@ def record_usage(model_id: str) -> None:
     save_data(data)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     import sys
     if len(sys.argv) > 1:
         if sys.argv[1] == "record" and len(sys.argv) > 2:

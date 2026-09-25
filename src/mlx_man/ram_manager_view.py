@@ -133,6 +133,6 @@ def run_ram_manager(expert_mode: bool = False):
             footer=get_system_status_footer(),
         )
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     expert = "--expert" in sys.argv
     run_ram_manager(expert_mode=expert)

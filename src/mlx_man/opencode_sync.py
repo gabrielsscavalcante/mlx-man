@@ -61,6 +61,6 @@ def sync_opencode_config(active_model_id: str = None) -> bool:
         return False
 
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     active = sys.argv[1] if len(sys.argv) > 1 else None
     sync_opencode_config(active)
