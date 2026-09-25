@@ -1,0 +1,35 @@
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+     ╭──────── Hub Search Results ────────╮                                                                             
+     │                                    │                                                                             
+     │    Found 2 matching MLX models.    │                                                                             
+     │                                    │                                                                             
+     ╰────────────────────────────────────╯                                                                             
+                                                                                                                        
+     ╭────────────────────────────────────────────────────────────────────────────────────────────────────────────╮     
+     │                                                                                                            │     
+     │ Hub Search Results                                                                                         │     
+     │   Model ID                                               Downloads       RAM Needed     Hardware Match     │     
+     │   mlx-community/Qwen2.5-7B-Instruct-4bit                 1,234,567          ~4.2 GB     🟢 Great Match     │     
+     │   mlx-community/QwQ-32B-4bit                               500,000         ~19.2 GB     🟡 Paging Risk     │     
+     │                                                                                                            │     
+     ╰────────────────────────────────────────────────────────────────────────────────────────────────────────────╯     
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+[↑↓] navigate  [enter] select  [esc/q] back   Apple M-Mock  ·  🟢 16.0/32 GB RAM  ·  GPU: 24 GB                         

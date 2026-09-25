@@ -558,3 +558,61 @@ def test_sync_models_snapshot(m1, m2, m3, m4):
     
     console.print(layout)
     assert_snapshot(console, "sync_models")
+
+@patch('mlx_man.cli_dashboard.get_chip_name', return_value="Apple M-Mock")
+@patch('mlx_man.cli_dashboard.get_free_ram_gb', return_value=16.0)
+@patch('mlx_man.cli_dashboard.get_total_ram_gb', return_value=32)
+@patch('mlx_man.cli_dashboard.get_current_gpu_limit', return_value="24 GB")
+def test_search_hub_results_snapshot(m1, m2, m3, m4):
+    from mlx_man.cli_dashboard import get_system_status_footer
+    from mlx_man.ui_components import create_header_panel
+    from mlx_man.tui_engine import build_layout
+    from rich.console import Console, Group
+    from rich.text import Text
+    from rich.table import Table
+    from rich.panel import Panel
+    from rich import box
+    
+    console = Console(width=120, height=35, record=True, force_terminal=True)
+    
+    header = create_header_panel(Text("Found 2 matching MLX models.", style="green"), "Hub Search Results")
+    
+    table = Table(
+        title="Hub Search Results",
+        title_style="bold white",
+        title_justify="left",
+        box=None,
+        header_style="dim white",
+        expand=True,
+        padding=(0, 2)
+    )
+    
+    table.add_column("Model ID", style="bold white")
+    table.add_column("Downloads", justify="right", style="dim")
+    table.add_column("RAM Needed", justify="right")
+    table.add_column("Hardware Match", justify="center")
+    
+    # Selected row
+    row1 = [
+        Text("mlx-community/Qwen2.5-7B-Instruct-4bit", style="bold black on white"),
+        Text("1,234,567", style="bold black on white"),
+        Text("~4.2 GB", style="bold black on white"),
+        Text("🟢 Great Match", style="bold black on white")
+    ]
+    table.add_row(*row1, style="bold black on white")
+    
+    row2 = [
+        "mlx-community/QwQ-32B-4bit",
+        "500,000",
+        "~19.2 GB",
+        Text("🟡 Paging Risk", style="bold yellow")
+    ]
+    table.add_row(*row2)
+    
+    panel = Panel(table, box=box.ROUNDED, border_style="bright_black", width=110, padding=(1,1))
+    body = Group(header, Text(""), panel)
+    
+    layout = build_layout(body, get_system_status_footer(), 120, 35, shortcuts={"↑↓": "navigate", "enter": "select", "esc/q": "back"})
+    
+    console.print(layout)
+    assert_snapshot(console, "search_hub_results")
