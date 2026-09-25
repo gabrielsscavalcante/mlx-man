@@ -32,8 +32,6 @@ class TestPackageStructure:
             "mlx_man.main",
             "mlx_man.cli_actions",
             "mlx_man.cli_dashboard",
-            "mlx_man.cli_layout",
-            "mlx_man.cli_select",
             "mlx_man.insights_view",
             "mlx_man.model_downloader",
             "mlx_man.model_inspector",
