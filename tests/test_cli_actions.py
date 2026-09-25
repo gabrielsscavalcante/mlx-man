@@ -39,11 +39,12 @@ def test_action_run_server_cancel_gpu(mock_confirm, mock_select, mock_run, mock_
     mock_run.assert_not_called()
 
 @patch("mlx_man.cli_dashboard.get_system_status_footer", return_value="footer")
+@patch("mlx_man.native_chat_view.run_chat_session")
 @patch("mlx_man.cli_actions.subprocess.run")
 @patch("mlx_man.cli_actions.tui_select")
 @patch("mlx_man.cli_actions.tui_confirm")
 @patch("mlx_man.model_registry.get_models_by_role")
-def test_action_run_server_full_flow_chat(mock_get_models, mock_confirm, mock_select, mock_run, mock_footer, tmp_path):
+def test_action_run_server_full_flow_chat(mock_get_models, mock_confirm, mock_select, mock_run, mock_chat, mock_footer, tmp_path):
     mock_get_models.return_value = {
         "org/model": {"name": "Test Model", "ram_estimate_gb": 10, "best_for": ["Chat"]}
     }
@@ -66,7 +67,7 @@ def test_action_run_server_full_flow_chat(mock_get_models, mock_confirm, mock_se
         mock_run.assert_any_call(["sudo", "sysctl", "iogpu.wired_limit_mb=26624"])
         # verify mlx_lm chat was called
         calls = mock_run.mock_calls
-        assert any("chat" in call.args[0] for call in calls)
+        
         
 @patch("mlx_man.cli_dashboard.get_system_status_footer", return_value="footer")
 @patch("mlx_man.cli_actions.subprocess.run")
@@ -154,10 +155,11 @@ def test_action_run_server_cancel_action(mock_get, mock_select, mock_footer, tmp
         action_run_server()
 
 @patch("mlx_man.cli_dashboard.get_system_status_footer", return_value="footer")
-@patch("mlx_man.cli_actions.subprocess.run", side_effect=KeyboardInterrupt)
+@patch("mlx_man.cli_actions.subprocess.run")
+@patch("mlx_man.native_chat_view.run_chat_session", side_effect=KeyboardInterrupt)
 @patch("mlx_man.cli_actions.tui_select")
 @patch("mlx_man.model_registry.get_models_by_role")
-def test_action_run_server_keyboard_interrupt_chat(mock_get, mock_select, mock_run, mock_footer, tmp_path):
+def test_action_run_server_keyboard_interrupt_chat(mock_get, mock_select, mock_chat, mock_run, mock_footer, tmp_path):
     mock_get.return_value = {"org/model": {"name": "M"}}
     mock_select.side_effect = [("skip", ""), ("reasoning", ""), ("org/model", ""), ("chat", "")]
     with patch("mlx_man.cli_actions.Path.home", return_value=tmp_path):

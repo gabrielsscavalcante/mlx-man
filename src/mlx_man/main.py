@@ -18,6 +18,7 @@ from mlx_man.cli_dashboard import (
 )
 
 from mlx_man.hub_search_view import action_search_hub
+from mlx_man.chat_history_view import action_chat_history
 from mlx_man.cli_actions import (
     action_run_server,
     run_memory_cleaner,
@@ -35,6 +36,7 @@ MENU_ITEMS = [
     ("🧹  Clean Up RAM",         "clean"),
     ("📦  Manage Models",        "manage"),
     ("📊  Insights & History",   "insights"),
+    ("💬  Chat History",         "history"),
     ("🔄  Sync Models",          "sync"),
     ("🔍  Search Hub",           "search"),
     None,                        # visual separator
@@ -73,6 +75,8 @@ def main():
                 run_model_inspector()
             elif choice == "insights":
                 run_insights_history()
+            elif choice == "history":
+                action_chat_history()
             elif choice == "sync":
                 action_sync_models()
 

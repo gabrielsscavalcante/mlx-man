@@ -183,7 +183,8 @@ def action_run_server():
         print(f"\n  ✔  Starting interactive terminal chat...")
         print("  ℹ  Type 'quit' or 'exit' to end the session.\n")
         try:
-            subprocess.run([sys.executable, "-m", "mlx_lm", "chat", "--model", model_id])
+            from mlx_man.native_chat_view import run_chat_session
+            run_chat_session(model_id)
         except KeyboardInterrupt:
             pass
 
