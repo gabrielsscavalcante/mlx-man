@@ -43,6 +43,8 @@
   - ⚡ **General Purpose**: Balanced models and MoE (Mixture of Experts) architectures for everyday tasks.
 - **Thinker → Builder Sequential Swap Workflow**: Maximize Apple Silicon unified memory (e.g. 32 GB) by running a reasoning model to formulate plans, then swapping to a builder model for code implementation.
 - **Interactive RAM Cleaner**: An Apple Silicon-aware process manager that scans memory-heavy applications and frees up unified memory before running large models.
+- **🔄 Sync & Search Hub**: Browse Hugging Face for top MLX models with real-time **Hardware Recommendations** (🟢 Great Match, 🔴 Will OOM) and sync local custom models directly into OpenCode.
+
 - **Complete Model Management**:
   - Detailed architecture inspection (layers, heads, hidden dimensions, quantization).
   - Accurate disk footprint calculations with Hugging Face cache scanning.
