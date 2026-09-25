@@ -18,7 +18,7 @@ from dataclasses import dataclass
 from rich.console import Group
 from rich.text import Text
 
-from mlx_man.tui_engine import tui_select, tui_confirm, tui_text_input
+from mlx_man.tui_engine import tui_select, tui_confirm, tui_text_input, tui_table_select
 from mlx_man.model_registry import MODEL_REGISTRY, get_registry_entry, ROLE_INFO
 from mlx_man.model_manager import delete_model_from_disk, HF_CACHE_DIR, MODEL_DIR_PREFIX, calculate_model_disk_size
 from mlx_man.cli_dashboard import get_total_ram_gb, get_current_gpu_limit, get_system_status_footer
@@ -190,10 +190,6 @@ def build_model_metadata(model_info: dict) -> ModelMetadata:
 
 
 def render_model_manager(models: List[ModelMetadata], filter_role: str = "All") -> Group:
-    """
-    Constructs and returns the full 'Manage Models' dashboard layout containing
-    the system summary panel and the formatted tabular list of installed models.
-    """
     total_models = len(models)
     total_disk_gb = sum(m.disk_gb for m in models)
     system_ram = get_total_ram_gb()
@@ -207,78 +203,68 @@ def render_model_manager(models: List[ModelMetadata], filter_role: str = "All") 
     summary_text.append("🖥️  System RAM Context: ", style="bold white")
     summary_text.append(f"{system_ram} GB Unified  |  Limit: {gpu_limit}", style="dim")
 
-    header_panel = create_header_panel(summary_text, "Manage Models")
-
-    columns = [
-        {"header": "Model Name & Quant", "style": "bold white"},
-        {"header": "Role / Category", "justify": "center"},
-        {"header": "Resource Cost", "justify": "right"},
-        {"header": "Tier Badge", "justify": "center"},
-        {"header": "Best For", "style": "dim"},
-    ]
-    table = create_data_table(columns=columns)
-
-    displayed_count = 0
-    for m in models:
-        if displayed_count >= 8:
-            table.add_row("...", "...", "...", "...", "...")
-            break
-            
-        if filter_role != "All" and m.role != filter_role:
-            continue
-
-        quant_pill = f"[dim]{m.quant_details}[/]"
-        name_cell = f"{m.name}\n{quant_pill}"
-
-        role_icon = get_role_icon(m.role)
-        role_cell = f"{role_icon} {m.role}"
-
-        cost_cell = f"Disk: {m.disk_gb:.1f} GB\n[dim]RAM: ~{m.ram_estimate_gb:.1f} GB[/]"
-
-        tier_color = get_tier_color(m.tier)
-        tier_badge = f"[{tier_color} reverse] {m.tier} [/]"
-
-        table.add_row(name_cell, role_cell, cost_cell, tier_badge, m.best_for)
-        table.add_row("", "", "", "", "")  # Spacing
-        displayed_count += 1
-
-    components = [header_panel, Text("")]
-    if total_models > 0:
-        components.append(table)
-    else:
-        components.append(Text("No models found. Try downloading one!", style="yellow"))
-
-    return Group(*components)
+    return create_header_panel(summary_text, "Manage Models")
 
 
 def run_model_inspector():
-    """Main interactive loop for discovering, filtering, and selecting models."""
     current_filter = "All"
     while True:
         raw_models = discover_models()
         models = [build_model_metadata(m) for m in raw_models]
+        
+        filtered = [m for m in models if current_filter == "All" or m.role == current_filter]
 
         header_view = render_model_manager(models, current_filter)
-        footer_text = get_system_status_footer()
+        footer_text = get_system_status_footer() + "  |  [d] Download  |  [f] Filter"
 
-        action_labels = {
-            "inspect": "🔍 Select Model to Inspect/Manage",
-            "filter": "📊 Filter by Category",
-            "download": "📥 Download a new model",
-            "back": "⬅️  Back to Main Menu",
-        }
-
-        choice = tui_select(
-            title="Select action:",
-            choices=["inspect", "filter", "download", "back"],
-            format_func=lambda x: action_labels.get(x, str(x)),
-            header=header_view,
-            footer=footer_text,
-        )
-
+        if not filtered:
+            choice = tui_select(
+                title="No models found.",
+                choices=["download", "filter", "back"],
+                format_func=lambda x: {"download": "📥 Download", "filter": "📊 Filter", "back": "⬅️ Back"}[x],
+                header=header_view,
+                footer=footer_text
+            )
+        else:
+            columns = [
+                {"header": "Model Name", "style": "bold white"},
+                {"header": "Role", "justify": "center"},
+                {"header": "Cost", "justify": "right"},
+                {"header": "Tier", "justify": "center"},
+                {"header": "Best For", "style": "dim"}
+            ]
+            
+            def get_row(m: ModelMetadata):
+                quant_pill = Text(m.quant_details, style="dim")
+                name_cell = Text(m.name + "\n").append(quant_pill)
+                
+                role_icon = {"Reasoning": "🧠", "Builder": "⚒️", "General": "⚡"}.get(m.role, "📦")
+                role_cell = f"{role_icon} {m.role}"
+                
+                cost_cell = Text(f"Disk: {m.disk_gb:.1f} GB\n").append(f"RAM: ~{m.ram_estimate_gb:.1f} GB", style="dim")
+                
+                tier_color = {"Light": "green", "Medium": "yellow", "Heavy": "red", "Very Heavy": "magenta"}.get(m.tier, "white")
+                tier_badge = Text(f" {m.tier} ", style=f"{tier_color} reverse")
+                
+                return [name_cell, role_cell, cost_cell, tier_badge, m.best_for]
+                
+            choice = tui_table_select(
+                title=f"Installed Models ({current_filter})",
+                columns=columns,
+                data=filtered,
+                row_func=get_row,
+                header=header_view,
+                footer=footer_text,
+                extra_hotkeys={"d": "download", "f": "filter"}
+            )
+            
         if not choice or choice == "back":
             break
-
+            
+        if choice == "download":
+            download_model()
+            continue
+            
         if choice == "filter":
             filter_labels = {
                 "All": "🌐 All",
@@ -291,45 +277,14 @@ def run_model_inspector():
                 choices=["All", "Reasoning", "Builder", "General"],
                 format_func=lambda x: filter_labels.get(x, str(x)),
                 header=header_view,
-                footer=footer_text,
+                footer=get_system_status_footer(),
             )
             if filter_choice:
                 current_filter = filter_choice
-
-        elif choice == "inspect":
-            filtered_models = [m for m in models if current_filter == "All" or m.role == current_filter]
-            if not filtered_models:
-                no_models_panel = create_header_panel(
-                    Text("No models available for the selected category.", style="yellow"),
-                    "Select Model",
-                )
-                tui_confirm(
-                    prompt="No models found. Press Enter to return.",
-                    header=no_models_panel,
-                    footer=footer_text,
-                )
-                continue
-
-            model_choices: List[Any] = list(filtered_models)
-            model_choices.append("cancel")
-
-            selected_m = tui_select(
-                title="Select a model:",
-                choices=model_choices,
-                format_func=lambda item: f"{item.name} ({item.disk_gb:.1f} GB)"
-                if isinstance(item, ModelMetadata)
-                else "⬅️  Cancel",
-                header=header_view,
-                footer=footer_text,
-            )
-
-            if not selected_m or selected_m == "cancel":
-                continue
-
-            _model_action_menu(selected_m)
-
-        elif choice == "download":
-            download_model()
+            continue
+            
+        if isinstance(choice, ModelMetadata):
+            _model_action_menu(choice)
 
 
 def _model_action_menu(model: ModelMetadata):

@@ -203,3 +203,6 @@ All TUI layout components MUST be backed by deterministic snapshot tests in `tes
 - Mocks: Always mock dynamic inputs like RAM amount, chip names, and process lists before taking a snapshot.
 - Generation: Run `UPDATE_SNAPSHOTS=1 pytest` to regenerate the `.txt` baseline and `.svg` visual artifact.
 - CI: The GitHub Actions CI pipeline will automatically upload the `.svg` snapshots as artifacts on every run.
+
+### TUI Engine and UI Menus
+All paginated tabular menus (such as the RAM process list, installed models list in `model_inspector.py`, and history in `insights_view.py`) use `tui_table_select` from `src/mlx_man/tui_engine.py` rather than static tables. This enables robust interactive scrolling without overflowing standard terminal heights.

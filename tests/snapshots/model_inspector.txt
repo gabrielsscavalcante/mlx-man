@@ -1,0 +1,35 @@
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+          ╭──────────────────────── Manage Models ─────────────────────────╮                                            
+          │                                                                │                                            
+          │    📦 Total Installed Models: 3                                │                                            
+          │    💾 Total Disk Footprint: 46.0 GB                            │                                            
+          │    🖥️  System RAM Context: 32.0 GB Unified  |  Limit: 24 GB    │                                            
+          │                                                                │                                            
+          ╰────────────────────────────────────────────────────────────────╯                                            
+                                                                                                                        
+          ╭──────────────────────────────────────────────────────────────────────────────────────────────────╮          
+          │                                                                                                  │          
+          │ Installed Models (All)                                                                           │          
+          │   Model Name                   Role                          Cost      Tier      Best For        │          
+          │   QwQ 32B\n4-bit           🧠 Reasoning       Disk: 18.0 GB\nRAM:      Heavy     Reasoning       │          
+          │                                                          ~19.0 GB                                │          
+          │   Devstral Small            ⚒️ Builder        Disk: 14.0 GB\nRAM:     Medium     Coding          │          
+          │   24B\n4-bit                                             ~15.0 GB                                │          
+          │   Qwen 3.6 27B\n4-bit       ⚡ General        Disk: 14.0 GB\nRAM:     Medium     General usage   │          
+          │                                                          ~15.0 GB                                │          
+          │                                                                                                  │          
+          ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯          
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+ Apple M-Mock  ·  🟢 16.0/32.0 GB RAM  ·  GPU: 24 GB  |  [d] Download  |  [f] Filter                                    

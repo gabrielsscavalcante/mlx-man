@@ -1,0 +1,45 @@
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+          ╭──────────────────────────── Insights & History ─────────────────────────────╮                               
+          │                                                                             │                               
+          │    🏆 Most Used Model: Devstral Small (120 uses, last active 2026-09-24)    │                               
+          │    📊 Total Inferences: 167                                                 │                               
+          │    167                                                                      │                               
+          │    💾 Total Disk Usage: 46.0 GB across 3 installed models                   │                               
+          │                                                                             │                               
+          ╰─────────────────────────────────────────────────────────────────────────────╯                               
+                                                                                                                        
+                                 Usage Distribution by Category                                                         
+            Category     Usage Chart                        Total Uses    Disk Space                                    
+            Reasoning    ██████░░░░░░░░░░░░░░░░░░░ 25.1%       42 uses       18.0 GB                                    
+            Build        █████████████████░░░░░░░░ 71.9%      120 uses       14.0 GB                                    
+            General      ░░░░░░░░░░░░░░░░░░░░░░░░░  3.0%        5 uses       14.0 GB                                    
+                                                                                                                        
+          ╭──────────────────────────────────────────────────────────────────────────────────────────────────╮          
+          │                                                                                                  │          
+          │ Installed Models (All)                                                                           │          
+          │   Model Name                  Category               Size       Uses    Last Used                │          
+          │   QwQ 32B                     Reasoning           18.0 GB         42    2026-09-25 14:30         │          
+          │   Devstral Small                Build             14.0 GB        120    2026-09-24 10:00         │          
+          │   Qwen 3.6                     General            14.0 GB          5    2026-09-20 08:15         │          
+          │                                                                                                  │          
+          ╰──────────────────────────────────────────────────────────────────────────────────────────────────╯          
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+                                                                                                                        
+ Apple M-Mock  ·  🟢 16.0/32.0 GB RAM  ·  GPU: 24 GB  |  [Enter] Remove  |  [f] Filter                                  

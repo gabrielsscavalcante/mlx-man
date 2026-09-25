@@ -6,7 +6,7 @@ Replaces blocking input libraries (like questionary) with native state machines.
 import sys
 import termios
 import tty
-from typing import List, Optional, Any, Callable, Tuple
+from typing import List, Optional, Any, Callable, Tuple, Dict
 
 from rich.console import Group, RenderableType
 from rich.layout import Layout
@@ -241,7 +241,8 @@ def tui_table_select(
     row_func: Callable[[Any], List[Any]],
     header: RenderableType,
     footer: str,
-    page_size: int = 15
+    page_size: int = 15,
+    extra_hotkeys: Optional[Dict[str, Any]] = None
 ) -> Optional[Any]:
     """State machine for UP/DOWN selection inside a paginated Rich Table."""
     if not data:
@@ -313,3 +314,5 @@ def tui_table_select(
                 return data[idx]
             elif key in ('escape', 'q'):
                 return None
+            elif extra_hotkeys and key in extra_hotkeys:
+                return extra_hotkeys[key]

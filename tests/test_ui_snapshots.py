@@ -153,3 +153,218 @@ def test_ram_manager_snapshot(m1, m2, m3, m4):
     console.print(layout)
     assert_snapshot(console, "ram_manager")
 
+
+@patch('mlx_man.cli_dashboard.get_chip_name', return_value="Apple M-Mock")
+@patch('mlx_man.cli_dashboard.get_free_ram_gb', return_value=16.0)
+@patch('mlx_man.cli_dashboard.get_total_ram_gb', return_value=32.0)
+@patch('mlx_man.cli_dashboard.get_current_gpu_limit', return_value="24 GB")
+def test_model_inspector_snapshot(m1, m2, m3, m4):
+    from mlx_man.cli_dashboard import get_system_status_footer
+    from mlx_man.model_inspector import render_model_manager, ModelMetadata
+    console = Console(width=120, height=35, record=True, force_terminal=True)
+    
+    models = [
+        ModelMetadata(
+            name="QwQ 32B",
+            repo_id="mlx-community/QwQ-32B-4bit",
+            disk_gb=18.0,
+            ram_estimate_gb=19.0,
+            tier="Heavy",
+            role="Reasoning",
+            quant_details="4-bit",
+            best_for="Reasoning",
+            raw_info={}
+        ),
+        ModelMetadata(
+            name="Devstral Small 24B",
+            repo_id="mlx-community/Devstral-Small-2507-4bit",
+            disk_gb=14.0,
+            ram_estimate_gb=15.0,
+            tier="Medium",
+            role="Builder",
+            quant_details="4-bit",
+            best_for="Coding",
+            raw_info={}
+        ),
+        ModelMetadata(
+            name="Qwen 3.6 27B",
+            repo_id="mlx-community/Qwen3.6-27B-4bit",
+            disk_gb=14.0,
+            ram_estimate_gb=15.0,
+            tier="Medium",
+            role="General",
+            quant_details="4-bit",
+            best_for="General usage",
+            raw_info={}
+        )
+    ]
+    
+    header_view = render_model_manager(models, "All")
+    
+    columns = [
+        {"header": "Model Name", "style": "bold white"},
+        {"header": "Role", "justify": "center"},
+        {"header": "Cost", "justify": "right"},
+        {"header": "Tier", "justify": "center"},
+        {"header": "Best For", "style": "dim"}
+    ]
+    
+    table = Table(
+        title="Installed Models (All)",
+        title_style="bold white",
+        title_justify="left",
+        box=None,
+        header_style="dim white",
+        expand=True,
+        padding=(0, 2)
+    )
+    for col in columns:
+        table.add_column(
+            col["header"],
+            style=col.get("style", ""),
+            justify=col.get("justify", "left"),
+            width=col.get("width", None),
+            min_width=col.get("min_width", None)
+        )
+        
+    for i, m in enumerate(models):
+        quant_pill = Text(m.quant_details, style="dim")
+        name_cell = Text(m.name + "\\n").append(quant_pill)
+        
+        role_icon = {"Reasoning": "🧠", "Builder": "⚒️", "General": "⚡"}.get(m.role, "📦")
+        role_cell = f"{role_icon} {m.role}"
+        
+        cost_cell = Text(f"Disk: {m.disk_gb:.1f} GB\\n").append(f"RAM: ~{m.ram_estimate_gb:.1f} GB", style="dim")
+        
+        tier_color = {"Light": "green", "Medium": "yellow", "Heavy": "red", "Very Heavy": "magenta"}.get(m.tier, "white")
+        tier_badge = Text(f" {m.tier} ", style=f"{tier_color} reverse")
+        
+        row = [name_cell, role_cell, cost_cell, tier_badge, m.best_for]
+        
+        if i == 0:
+            styled_row = []
+            for cell in row:
+                if isinstance(cell, str):
+                    t = Text(cell)
+                    t.stylize("bold black on white")
+                    styled_row.append(t)
+                elif isinstance(cell, Text):
+                    cell.style = "bold black on white"
+                    styled_row.append(cell)
+                else:
+                    styled_row.append(cell)
+            table.add_row(*styled_row, style="bold black on white")
+        else:
+            table.add_row(*row)
+            
+    from rich import box
+    panel = Panel(table, box=box.ROUNDED, border_style="bright_black", width=100, padding=(1,1))
+    body = Group(header_view, Text(""), panel)
+    
+    footer_text = get_system_status_footer() + "  |  [d] Download  |  [f] Filter"
+    layout = build_layout(body, footer_text, 120, 35)
+    
+    console.print(layout)
+    assert_snapshot(console, "model_inspector")
+
+@patch('mlx_man.cli_dashboard.get_chip_name', return_value="Apple M-Mock")
+@patch('mlx_man.cli_dashboard.get_free_ram_gb', return_value=16.0)
+@patch('mlx_man.cli_dashboard.get_total_ram_gb', return_value=32.0)
+@patch('mlx_man.cli_dashboard.get_current_gpu_limit', return_value="24 GB")
+def test_insights_snapshot(m1, m2, m3, m4):
+    from mlx_man.cli_dashboard import get_system_status_footer
+    from mlx_man.insights_view import get_insights_view, ModelInfo, get_category_color
+    import datetime
+    console = Console(width=120, height=45, record=True, force_terminal=True)
+    
+    models = [
+        ModelInfo(
+            name="QwQ 32B",
+            repo_id="test/QwQ",
+            size_gb=18.0,
+            times_used=42,
+            last_used=datetime.datetime(2026, 9, 25, 14, 30),
+            category="Reasoning"
+        ),
+        ModelInfo(
+            name="Devstral Small",
+            repo_id="test/Devstral",
+            size_gb=14.0,
+            times_used=120,
+            last_used=datetime.datetime(2026, 9, 24, 10, 00),
+            category="Build"
+        ),
+        ModelInfo(
+            name="Qwen 3.6",
+            repo_id="test/Qwen",
+            size_gb=14.0,
+            times_used=5,
+            last_used=datetime.datetime(2026, 9, 20, 8, 15),
+            category="General"
+        )
+    ]
+    
+    header_view = get_insights_view(models, "All")
+    
+    columns = [
+        {"header": "Model Name", "style": "bold white"},
+        {"header": "Category", "justify": "center"},
+        {"header": "Size", "justify": "right", "style": "dim"},
+        {"header": "Uses", "justify": "right"},
+        {"header": "Last Used", "style": "dim"},
+    ]
+    
+    table = Table(
+        title="Installed Models (All)",
+        title_style="bold white",
+        title_justify="left",
+        box=None,
+        header_style="dim white",
+        expand=True,
+        padding=(0, 2)
+    )
+    for col in columns:
+        table.add_column(
+            col["header"],
+            style=col.get("style", ""),
+            justify=col.get("justify", "left"),
+            width=col.get("width", None),
+            min_width=col.get("min_width", None)
+        )
+        
+    for i, m in enumerate(models):
+        cat_color = get_category_color(m.category)
+        cat_badge = Text(f" {m.category} ", style=f"{cat_color} reverse")
+        
+        uses_style = "bold red" if m.times_used == 0 else "white"
+        uses_text = Text(str(m.times_used), style=uses_style)
+        
+        last_used_str = m.last_used.strftime('%Y-%m-%d %H:%M') if m.last_used else "Never"
+        
+        row = [m.name, cat_badge, f"{m.size_gb:.1f} GB", uses_text, last_used_str]
+        
+        if i == 0:
+            styled_row = []
+            for cell in row:
+                if isinstance(cell, str):
+                    t = Text(cell)
+                    t.stylize("bold black on white")
+                    styled_row.append(t)
+                elif isinstance(cell, Text):
+                    cell.style = "bold black on white"
+                    styled_row.append(cell)
+                else:
+                    styled_row.append(cell)
+            table.add_row(*styled_row, style="bold black on white")
+        else:
+            table.add_row(*row)
+            
+    from rich import box
+    panel = Panel(table, box=box.ROUNDED, border_style="bright_black", width=100, padding=(1,1))
+    body = Group(header_view, Text(""), panel)
+    
+    footer_text = get_system_status_footer() + "  |  [Enter] Remove  |  [f] Filter"
+    layout = build_layout(body, footer_text, 120, 45)
+    
+    console.print(layout)
+    assert_snapshot(console, "insights")
