@@ -43,37 +43,60 @@ class TestTerminationSafety:
         mock_p.terminate.assert_called_once()
         mock_p.kill.assert_called_once()
 
-    @patch('mlx_man.ram_manager_view.questionary.select')
+    @patch('mlx_man.ram_manager_view.tui_select')
     @patch('mlx_man.ram_manager_view.ProcessService.terminate_process')
     @patch('mlx_man.ram_manager_view.ProcessService.get_system_memory_info')
     @patch('mlx_man.ram_manager_view.ProcessService.get_processes')
-    @patch('mlx_man.ram_manager_view.questionary.confirm')
-    @patch('mlx_man.ram_manager_view.render_centered_view')
-    def test_cancel_confirmation_aborts(self, mock_render, mock_confirm, mock_get_processes, mock_get_mem, mock_terminate, mock_select):
+    @patch('mlx_man.ram_manager_view.tui_confirm')
+    def test_cancel_confirmation_aborts(self, mock_confirm, mock_get_processes, mock_get_mem, mock_terminate, mock_select):
         from mlx_man.ram_manager_view import run_ram_manager
         mock_get_mem.return_value = {"used_gb": 10, "total_gb": 32, "wired_gb": 2}
         mock_get_processes.return_value = []
         safe_proc = ProcessInfo(123, "language_server", 100, "Safe", "Desc")
-        mock_select.return_value.ask.side_effect = [safe_proc, "cancel"]
-        mock_confirm.return_value.ask.return_value = False
+        mock_select.side_effect = [safe_proc, "cancel"]
+        mock_confirm.return_value = False
         run_ram_manager(expert_mode=False)
         mock_terminate.assert_not_called()
+        
+        # Verify format_func passed to tui_select
+        assert mock_select.call_count >= 1
+        _, kwargs = mock_select.call_args_list[0]
+        format_func = kwargs["format_func"]
+        assert format_func("cancel") == "Exit"
+        assert format_func(safe_proc) == "language_server (123)"
 
-    @patch('mlx_man.ram_manager_view.questionary.select')
+    @patch('mlx_man.ram_manager_view.tui_select')
     @patch('mlx_man.ram_manager_view.ProcessService.terminate_process')
     @patch('mlx_man.ram_manager_view.ProcessService.get_system_memory_info')
     @patch('mlx_man.ram_manager_view.ProcessService.get_processes')
-    @patch('mlx_man.ram_manager_view.questionary.text')
-    @patch('mlx_man.ram_manager_view.render_centered_view')
-    def test_danger_without_override_prevents_kill(self, mock_render, mock_text, mock_get_processes, mock_get_mem, mock_terminate, mock_select):
+    @patch('mlx_man.ram_manager_view.tui_text_input')
+    def test_danger_without_override_prevents_kill(self, mock_text, mock_get_processes, mock_get_mem, mock_terminate, mock_select):
         from mlx_man.ram_manager_view import run_ram_manager
         mock_get_mem.return_value = {"used_gb": 10, "total_gb": 32, "wired_gb": 2}
         mock_get_processes.return_value = []
         danger_proc = ProcessInfo(123, "ControlCenter", 100, "Danger", "Desc")
-        mock_select.return_value.ask.side_effect = [danger_proc, "cancel"]
+        mock_select.side_effect = [danger_proc, "cancel"]
         run_ram_manager(expert_mode=False)
-        mock_text.return_value.ask.assert_called_once()
+        mock_text.assert_called_once()
         mock_terminate.assert_not_called()
+
+    @patch('mlx_man.ram_manager_view.tui_select')
+    @patch('mlx_man.ram_manager_view.ProcessService.terminate_process')
+    @patch('mlx_man.ram_manager_view.ProcessService.get_system_memory_info')
+    @patch('mlx_man.ram_manager_view.ProcessService.get_processes')
+    @patch('mlx_man.ram_manager_view.tui_confirm')
+    @patch('mlx_man.ram_manager_view.tui_text_input')
+    def test_confirm_safe_process_kills_successfully(self, mock_text, mock_confirm, mock_get_processes, mock_get_mem, mock_terminate, mock_select):
+        from mlx_man.ram_manager_view import run_ram_manager
+        mock_get_mem.return_value = {"used_gb": 10, "total_gb": 32, "wired_gb": 2}
+        mock_get_processes.return_value = []
+        safe_proc = ProcessInfo(123, "language_server", 100, "Safe", "Desc")
+        mock_select.side_effect = [safe_proc, "cancel"]
+        mock_confirm.return_value = True
+        mock_terminate.return_value = True
+        run_ram_manager(expert_mode=False)
+        mock_terminate.assert_called_once_with(123)
+        mock_text.assert_called_once()
 
 class TestUIRendering:
     def test_render_table_no_truncation(self):

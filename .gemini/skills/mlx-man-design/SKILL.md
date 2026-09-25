@@ -10,15 +10,15 @@ This skill defines the visual identity, UI components, and rendering patterns fo
 ## 1. The "Spotlight" Aesthetic
 MLX-Man uses a floating, centered, macOS-native aesthetic, similar to Spotlight or Raycast. 
 - **No manual clearing:** Never use `console.clear()` or ANSI escape sequences (`\033[H\033[2J`).
-- **Central Rendering Engine:** Every view must be rendered by passing a `rich.console.Group` to `render_centered_view` from `mlx_man.cli_layout`. This engine handles terminal clearing, accurate vertical/horizontal centering, and the sticky footer.
+- **Central TUI Engine:** Every view must be rendered using `tui_engine.py` (`tui_select`, `tui_confirm`, `tui_text_input`). This engine uses `rich.live.Live(screen=True)` to take over the alternate screen buffer, meaning it naturally recalculates centering on every window resize event.
 
 ```python
-from mlx_man.cli_layout import render_centered_view
+from mlx_man.tui_engine import tui_select
 from rich.console import Group
 
 # Correct:
-layout = Group(header_panel, table, prompt_text)
-render_centered_view(layout, prompt_lines=5)
+header_group = Group(header_panel, data_table)
+choice = tui_select("Select action:", choices, format_func, header=header_group, footer="Status")
 ```
 
 ## 2. Color Palette
@@ -48,10 +48,14 @@ Use `create_warning_panel(content, title)` for destructive confirmation prompts 
 - Automatically applies `yellow` borders to grab attention.
 
 ## 4. Interactive Prompts
-- Always use `questionary` for user input (selectors, text inputs, confirmations).
-- When calling `render_centered_view`, accurately estimate the `prompt_lines` argument based on how many choices `questionary` will render below the centered view. This ensures the entire block (content + prompt) is perfectly centered vertically.
+- **NEVER use `questionary` or `input()`.** Standard blocking input libraries cause screen tearing and disable dynamic resizing because they fight with the `Live` context.
+- Always use the state-machine inputs from `mlx_man.tui_engine`:
+  - `tui_select` for menus and lists.
+  - `tui_confirm` for Yes/No prompts.
+  - `tui_text_input` for typing text (like HuggingFace IDs).
+- These functions use native non-blocking `termios` key captures, ensuring the `Live` renderer maintains total control of the layout matrix at all times.
 
 ## 5. UX Safety Guardrails
-- **Destructive Actions:** Any action that modifies the system (deleting a model, killing a process) MUST have a mandatory `questionary.confirm` prompt.
+- **Destructive Actions:** Any action that modifies the system (deleting a model, killing a process) MUST have a mandatory `tui_confirm` prompt.
 - **Feedback:** After a long or destructive action, show a clear success or error message, and pause (via `time.sleep()` or waiting for the user to press Enter) so the user can read the result before the screen redraws.
 - **Progress:** Long-running operations (like HuggingFace downloads) must provide continuous visual feedback (e.g., progress bars) so the user knows the app hasn't stalled.

@@ -57,11 +57,9 @@ def test_rendering():
 
 @patch("mlx_man.insights_view.gather_models")
 @patch("mlx_man.insights_view.delete_model_from_disk")
-@patch("mlx_man.insights_view.questionary.select")
-@patch("mlx_man.insights_view.questionary.confirm")
-@patch("mlx_man.insights_view.console")
-@patch("builtins.input", return_value="")
-def test_deletion_safety(mock_input, mock_console, mock_confirm, mock_select, mock_delete, mock_gather):
+@patch("mlx_man.insights_view.tui_select")
+@patch("mlx_man.insights_view.tui_confirm")
+def test_deletion_safety(mock_confirm, mock_select, mock_delete, mock_gather):
     mock_model = ModelInfo(
         name="To Delete",
         repo_id="test/delete",
@@ -73,27 +71,54 @@ def test_deletion_safety(mock_input, mock_console, mock_confirm, mock_select, mo
     mock_gather.return_value = [mock_model]
 
     # Test 1: User cancels deletion
-    mock_select_ask = MagicMock()
-    mock_select_ask.side_effect = ["remove", mock_model, "back"]
-    mock_select.return_value.ask = mock_select_ask
-
-    mock_confirm_ask = MagicMock()
-    mock_confirm_ask.return_value = False
-    mock_confirm.return_value.ask = mock_confirm_ask
+    mock_select.side_effect = ["remove", mock_model, "back"]
+    mock_confirm.return_value = False
 
     run_insights_history()
     mock_delete.assert_not_called()
 
     # Test 2: User confirms deletion
-    mock_select_ask.side_effect = ["remove", mock_model, "back"]
-    mock_select.return_value.ask = mock_select_ask
-
-    mock_confirm_ask.return_value = True
-    mock_confirm.return_value.ask = mock_confirm_ask
+    mock_select.side_effect = ["remove", mock_model, "continue", "back"]
+    mock_confirm.return_value = True
     mock_delete.return_value = 1024 ** 3
 
     run_insights_history()
     mock_delete.assert_called_once_with("test/delete")
+
+
+@patch("mlx_man.insights_view.gather_models")
+@patch("mlx_man.insights_view.tui_select")
+def test_filter_routing(mock_select, mock_gather):
+    mock_gather.return_value = []
+    # User selects filter -> Reason -> back
+    mock_select.side_effect = ["filter", "Reasoning", "back"]
+
+    run_insights_history()
+    assert mock_select.call_count == 3
+
+
+@patch("mlx_man.insights_view.gather_models")
+@patch("mlx_man.insights_view.delete_model_from_disk")
+@patch("mlx_man.insights_view.tui_select")
+@patch("mlx_man.insights_view.tui_confirm")
+def test_deletion_error_handling(mock_confirm, mock_select, mock_delete, mock_gather):
+    mock_model = ModelInfo(
+        name="Error Model",
+        repo_id="test/error",
+        size_gb=2.0,
+        times_used=1,
+        last_used=None,
+        category="General"
+    )
+    mock_gather.return_value = [mock_model]
+
+    mock_select.side_effect = ["remove", mock_model, "continue", "back"]
+    mock_confirm.return_value = True
+    mock_delete.side_effect = RuntimeError("Disk permission denied")
+
+    # Should not raise exception
+    run_insights_history()
+    mock_delete.assert_called_once_with("test/error")
 
 
 def test_sorting_logic():
@@ -108,3 +133,72 @@ def test_sorting_logic():
     assert sorted_models[0].name == "Used 0 times"
     assert sorted_models[1].name == "Used 2 times"
     assert sorted_models[2].name == "Used 5 times"
+
+
+@patch("mlx_man.insights_view.gather_models")
+@patch("mlx_man.insights_view.tui_select")
+def test_cancel_model_selection(mock_select, mock_gather):
+    mock_model = ModelInfo("M1", "repo1", 2.0, 0, None, "General")
+    mock_gather.return_value = [mock_model]
+
+    # Select remove, then cancel, then back
+    mock_select.side_effect = ["remove", "cancel", "back"]
+    run_insights_history()
+    assert mock_select.call_count == 3
+
+    # Select remove, then None (Esc), then back
+    mock_select.side_effect = ["remove", None, "back"]
+    run_insights_history()
+    assert mock_select.call_count == 6
+
+
+@patch("mlx_man.insights_view.gather_models")
+@patch("mlx_man.insights_view.tui_select")
+def test_empty_models_remove(mock_select, mock_gather):
+    mock_gather.return_value = []
+    # If no models, remove should skip and re-prompt
+    mock_select.side_effect = ["remove", "back"]
+    run_insights_history()
+    assert mock_select.call_count == 2
+
+
+@patch("mlx_man.insights_view.gather_models")
+@patch("mlx_man.insights_view.tui_select")
+def test_tui_select_format_funcs(mock_select, mock_gather):
+    mock_model = ModelInfo("TestModel", "repo/test", 4.2, 3, None, "Build")
+    mock_gather.return_value = [mock_model]
+
+    calls_kwargs = []
+    def capture_kwargs(*args, **kwargs):
+        calls_kwargs.append(kwargs)
+        if len(calls_kwargs) == 1:
+            return "remove"
+        elif len(calls_kwargs) == 2:
+            return "cancel"
+        return "back"
+
+    mock_select.side_effect = capture_kwargs
+    run_insights_history()
+
+    # Verify first call (main menu action)
+    first_call = calls_kwargs[0]
+    assert first_call["title"] == "Select action:"
+    assert first_call["choices"] == ["remove", "filter", "back"]
+    assert "header" in first_call
+    assert "footer" in first_call
+    format_action = first_call["format_func"]
+    assert "Remove" in format_action("remove")
+    assert "Filter" in format_action("filter")
+    assert "Back" in format_action("back")
+
+    # Verify second call (model selection)
+    second_call = calls_kwargs[1]
+    assert second_call["title"] == "Select model to completely remove:"
+    assert "header" in second_call
+    assert "footer" in second_call
+    format_model = second_call["format_func"]
+    assert "TestModel" in format_model(mock_model)
+    assert "4.2 GB" in format_model(mock_model)
+    assert "3 uses" in format_model(mock_model)
+    assert format_model("cancel") == "Cancel"
+

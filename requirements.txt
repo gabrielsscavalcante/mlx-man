@@ -4,7 +4,6 @@ mlx-lm>=0.20.0
 
 # Terminal UI & formatting
 rich>=13.7.0
-questionary>=2.0.0
 
 # System & memory monitoring
 psutil>=5.9.0

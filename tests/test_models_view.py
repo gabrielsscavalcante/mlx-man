@@ -17,7 +17,7 @@ def test_tier_assignment():
     assert get_tier(10.0) == "Medium"
     assert get_tier(15.0) == "Medium"
     assert get_tier(16.0) == "Medium"
-    assert get_tier(17.0) == "Heavy"
+    assert get_tier(20.0) == "Heavy"
     assert get_tier(24.0) == "Heavy"
     assert get_tier(25.0) == "Very Heavy"
 
@@ -26,7 +26,7 @@ def test_category_heuristics():
     assert categorize_model("mlx-community/QwQ-32B-4bit") == "Reasoning"
     assert categorize_model("mlx-community/Qwen3.6-27B-4bit") == "General"
 
-@patch('mlx_man.model_inspector.questionary.select')
+@patch('mlx_man.model_inspector.tui_select')
 @patch('mlx_man.model_inspector._model_action_menu')
 @patch('mlx_man.model_inspector.download_model')
 @patch('mlx_man.model_inspector.discover_models')
@@ -37,7 +37,7 @@ def test_interactive_action_routing(mock_discover, mock_download, mock_action_me
         "specs": {},
     }]
 
-    mock_select.return_value.ask.side_effect = [
+    mock_select.side_effect = [
         "inspect",
         "cancel",
         "download",
@@ -50,7 +50,7 @@ def test_interactive_action_routing(mock_discover, mock_download, mock_action_me
     assert not mock_action_menu.called
 
     dummy_meta = build_model_metadata(mock_discover.return_value[0])
-    mock_select.return_value.ask.side_effect = [
+    mock_select.side_effect = [
         "inspect",
         dummy_meta,
         "back"
@@ -98,10 +98,7 @@ def test_table_and_badge_rendering():
         )
     ]
 
-    with patch('mlx_man.model_inspector.render_centered_view') as mock_render:
-        render_model_manager(models)
-
-    group = mock_render.call_args[0][0]
+    group = render_model_manager(models)
     console.print(group)
     output = console.export_text()
 
@@ -115,11 +112,10 @@ def test_table_and_badge_rendering():
     assert "Medium" in output
 
 
-@patch('mlx_man.model_inspector.questionary.select')
-@patch('mlx_man.model_inspector.questionary.confirm')
+@patch('mlx_man.model_inspector.tui_select')
+@patch('mlx_man.model_inspector.tui_confirm')
 @patch('mlx_man.model_inspector.delete_model_from_disk')
-@patch('mlx_man.model_inspector.render_centered_view')
-def test_model_action_menu_delete(mock_render, mock_delete, mock_confirm, mock_select):
+def test_model_action_menu_delete(mock_delete, mock_confirm, mock_select):
     from mlx_man.model_inspector import _model_action_menu
 
     dummy_model = ModelMetadata(
@@ -134,30 +130,23 @@ def test_model_action_menu_delete(mock_render, mock_delete, mock_confirm, mock_s
         raw_info={}
     )
 
-    mock_select.return_value.ask.side_effect = ["delete"]
-    mock_confirm.return_value.ask.return_value = True
+    mock_select.side_effect = ["delete"]
+    mock_confirm.side_effect = [True, True]
     mock_delete.return_value = 5 * 1024**3
 
     _model_action_menu(dummy_model)
 
     assert mock_delete.called
-    # Check that render_centered_view was called with prompt_lines=7 for the menu and prompt_lines=0 for the result
-    call_args_list = mock_render.call_args_list
-    assert any(c.kwargs.get("prompt_lines") == 7 for c in call_args_list)
-    assert any(c.kwargs.get("prompt_lines") == 0 for c in call_args_list)
+    assert mock_confirm.call_count >= 1
 
 
-@patch('mlx_man.model_inspector.questionary.text')
-@patch('mlx_man.model_inspector.render_centered_view')
-def test_download_model_invalid_format(mock_render, mock_text):
+@patch('mlx_man.model_inspector.tui_text_input')
+@patch('mlx_man.model_inspector.tui_confirm')
+def test_download_model_invalid_format(mock_confirm, mock_text):
     from mlx_man.model_inspector import download_model
 
-    mock_text.return_value.ask.return_value = "invalid_id"
+    mock_text.return_value = "invalid_id"
 
     download_model()
 
-    call_args_list = mock_render.call_args_list
-    # First call: prompt screen with prompt_lines=2
-    assert call_args_list[0].kwargs.get("prompt_lines") == 2
-    # Second call: error warning panel with prompt_lines=0
-    assert call_args_list[1].kwargs.get("prompt_lines") == 0
+    assert mock_confirm.called

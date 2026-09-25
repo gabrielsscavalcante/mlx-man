@@ -40,28 +40,25 @@ MENU_ITEMS = [
 ]
 
 
+from mlx_man.tui_engine import main_menu_select
+
 def main():
     """Main interactive loop with Spotlight-style fully centered UI."""
-    # Enter Alternate Screen Buffer
-    sys.__stdout__.write("\033[?1049h")
-    sys.__stdout__.flush()
-
     goodbye = False
 
     try:
         while True:
-            # Fix the tip for this menu cycle (so it doesn't change per keypress)
             below_panel = Group(
                 get_shortcuts_line(),
                 Text(""),
                 get_tip_line(),
             )
 
-            choice = centered_select(
+            choice = main_menu_select(
                 items=MENU_ITEMS,
                 header=get_banner(),
                 below_panel=below_panel,
-                footer_status=get_system_status_footer(),
+                footer=get_system_status_footer(),
             )
 
             if not choice or choice == "exit":
@@ -77,25 +74,11 @@ def main():
             elif choice == "insights":
                 run_insights_history()
 
-            if choice != "exit":
-                console.print(
-                    "\n  [dim]Press Enter to return to the main menu...[/]",
-                    end="",
-                )
-                input()
-
     except KeyboardInterrupt:
         goodbye = True
 
-    finally:
-        # Exit Alternate Screen Buffer cleanly — no artifacts left behind
-        sys.__stdout__.write("\033[?1049l")
-        sys.__stdout__.flush()
-
-    # Print goodbye AFTER exiting alt screen so the user actually sees it
     if goodbye:
-        console.print("\n  [green]✔[/]  Goodbye! 👋\n")
-
+        print("\n  \033[32m✔\033[0m  Goodbye! 👋\n")
 
 if __name__ == "__main__":
     main()

@@ -2,7 +2,7 @@
 """
 model_inspector.py — Browse, inspect, download, and delete local MLX models.
 
-Refactored to use rich and questionary for a modern TUI experience.
+Refactored to use rich and tui_engine for a modern TUI experience.
 """
 
 import json
@@ -12,20 +12,18 @@ import subprocess
 import sys
 import time
 from pathlib import Path
-from typing import Dict, List, Optional, Literal
+from typing import Dict, List, Optional, Literal, Any
 from dataclasses import dataclass
 
-from rich.console import Console, Group
+from rich.console import Group
 from rich.text import Text
-import questionary
 
+from mlx_man.tui_engine import tui_select, tui_confirm, tui_text_input
 from mlx_man.model_registry import MODEL_REGISTRY, get_registry_entry, ROLE_INFO
 from mlx_man.model_manager import delete_model_from_disk, HF_CACHE_DIR, MODEL_DIR_PREFIX, calculate_model_disk_size
-from mlx_man.cli_dashboard import get_total_ram_gb, get_current_gpu_limit
+from mlx_man.cli_dashboard import get_total_ram_gb, get_current_gpu_limit, get_system_status_footer
 from mlx_man.ui_components import create_header_panel, create_data_table, create_warning_panel
-from mlx_man.cli_layout import render_centered_view
 
-console = Console()
 
 @dataclass
 class ModelMetadata:
@@ -39,6 +37,7 @@ class ModelMetadata:
     best_for: str
     raw_info: dict  # To keep raw specs and paths
 
+
 def categorize_model(repo_id: str) -> Literal["Reasoning", "Builder", "General"]:
     """Categorize model based on registry role or heuristics."""
     entry = get_registry_entry(repo_id)
@@ -50,14 +49,15 @@ def categorize_model(repo_id: str) -> Literal["Reasoning", "Builder", "General"]
             return "Builder"
         elif role == "general":
             return "General"
-    
+
     repo_lower = repo_id.lower()
     if any(x in repo_lower for x in ["qwq", "r1", "o1", "reasoning"]):
         return "Reasoning"
     if any(x in repo_lower for x in ["coder", "devstral", "build"]):
         return "Builder"
-    
+
     return "General"
+
 
 def get_tier(ram_gb: float) -> Literal["Light", "Medium", "Heavy", "Very Heavy"]:
     """Map RAM footprint to an intuitive performance tier."""
@@ -70,18 +70,26 @@ def get_tier(ram_gb: float) -> Literal["Light", "Medium", "Heavy", "Very Heavy"]
     else:
         return "Very Heavy"
 
+
 def get_tier_color(tier: str) -> str:
     """Return the rich color corresponding to a given tier."""
-    if tier == "Light": return "green"
-    if tier == "Medium": return "yellow"
-    if tier == "Heavy": return "magenta"
+    if tier == "Light":
+        return "green"
+    if tier == "Medium":
+        return "yellow"
+    if tier == "Heavy":
+        return "magenta"
     return "bold red"
+
 
 def get_role_icon(role: str) -> str:
     """Return the semantic icon for a given role category."""
-    if role == "Reasoning": return "🧠"
-    if role == "Builder": return "⚒️"
+    if role == "Reasoning":
+        return "🧠"
+    if role == "Builder":
+        return "⚒️"
     return "⚡"
+
 
 def discover_models() -> List[dict]:
     """Scan the HuggingFace cache and return a list of installed model info dicts."""
@@ -93,7 +101,7 @@ def discover_models() -> List[dict]:
         if not model_dir.is_dir() or not model_dir.name.startswith(MODEL_DIR_PREFIX):
             continue
 
-        parts = model_dir.name[len(MODEL_DIR_PREFIX):].split("--")
+        parts = model_dir.name[len(MODEL_DIR_PREFIX) :].split("--")
         if len(parts) < 2:
             continue
         model_id = "/".join(parts)
@@ -130,6 +138,7 @@ def discover_models() -> List[dict]:
         })
     return models
 
+
 def _extract_specs(config: dict) -> dict:
     """Extract human-readable specs from a model's config.json."""
     specs = {}
@@ -142,16 +151,16 @@ def _extract_specs(config: dict) -> dict:
     if quant:
         bits = quant.get("bits", "?")
         group_size = quant.get("group_size", "?")
-        mode = quant.get("mode", "?")
         specs["quantization"] = f"{bits}-bit g{group_size}"
-    
+
     return specs
+
 
 def build_model_metadata(model_info: dict) -> ModelMetadata:
     """Transform raw discovery info into structured ModelMetadata for rendering."""
     model_id = model_info["model_id"]
     disk_gb = model_info["disk_bytes"] / (1024**3)
-    
+
     reg = model_info.get("registry")
     if reg:
         name = reg.get("name", model_id.split("/")[-1])
@@ -163,10 +172,10 @@ def build_model_metadata(model_info: dict) -> ModelMetadata:
         ram_est = disk_gb * 1.05
         quant = model_info["specs"].get("quantization", "Unknown")
         best_for = "General usage"
-        
+
     role = categorize_model(model_id)
     tier = get_tier(ram_est)
-    
+
     return ModelMetadata(
         name=name,
         repo_id=model_id,
@@ -176,12 +185,13 @@ def build_model_metadata(model_info: dict) -> ModelMetadata:
         role=role,
         quant_details=quant,
         best_for=best_for,
-        raw_info=model_info
+        raw_info=model_info,
     )
 
-def render_model_manager(models: List[ModelMetadata], filter_role: str = "All"):
+
+def render_model_manager(models: List[ModelMetadata], filter_role: str = "All") -> Group:
     """
-    Constructs and renders the full 'Manage Models' dashboard layout containing
+    Constructs and returns the full 'Manage Models' dashboard layout containing
     the system summary panel and the formatted tabular list of installed models.
     """
     total_models = len(models)
@@ -211,20 +221,20 @@ def render_model_manager(models: List[ModelMetadata], filter_role: str = "All"):
     for m in models:
         if filter_role != "All" and m.role != filter_role:
             continue
-            
+
         quant_pill = f"[dim]{m.quant_details}[/]"
         name_cell = f"{m.name}\n{quant_pill}"
-        
+
         role_icon = get_role_icon(m.role)
         role_cell = f"{role_icon} {m.role}"
-        
+
         cost_cell = f"Disk: {m.disk_gb:.1f} GB\n[dim]RAM: ~{m.ram_estimate_gb:.1f} GB[/]"
-        
+
         tier_color = get_tier_color(m.tier)
         tier_badge = f"[{tier_color} reverse] {m.tier} [/]"
-        
+
         table.add_row(name_cell, role_cell, cost_cell, tier_badge, m.best_for)
-        table.add_row("", "", "", "", "") # Spacing
+        table.add_row("", "", "", "", "")  # Spacing
 
     components = [header_panel, Text("")]
     if total_models > 0:
@@ -232,7 +242,8 @@ def render_model_manager(models: List[ModelMetadata], filter_role: str = "All"):
     else:
         components.append(Text("No models found. Try downloading one!", style="yellow"))
 
-    render_centered_view(Group(*components), prompt_lines=6)
+    return Group(*components)
+
 
 def run_model_inspector():
     """Main interactive loop for discovering, filtering, and selecting models."""
@@ -240,54 +251,80 @@ def run_model_inspector():
     while True:
         raw_models = discover_models()
         models = [build_model_metadata(m) for m in raw_models]
-        
-        render_model_manager(models, current_filter)
-        
-        choices = [
-            questionary.Choice("🔍 Select Model to Inspect/Manage", "inspect"),
-            questionary.Choice("📊 Filter by Category", "filter"),
-            questionary.Choice("📥 Download a new model", "download"),
-            questionary.Choice("⬅️  Back to Main Menu", "back")
-        ]
-        
-        choice = questionary.select(
-            "Select action:",
-            choices=choices
-        ).ask()
-        
+
+        header_view = render_model_manager(models, current_filter)
+        footer_text = get_system_status_footer()
+
+        action_labels = {
+            "inspect": "🔍 Select Model to Inspect/Manage",
+            "filter": "📊 Filter by Category",
+            "download": "📥 Download a new model",
+            "back": "⬅️  Back to Main Menu",
+        }
+
+        choice = tui_select(
+            title="Select action:",
+            choices=["inspect", "filter", "download", "back"],
+            format_func=lambda x: action_labels.get(x, str(x)),
+            header=header_view,
+            footer=footer_text,
+        )
+
         if not choice or choice == "back":
             break
-            
+
         if choice == "filter":
-            filter_choice = questionary.select(
-                "Select category to view:",
-                choices=["All", "Reasoning", "Builder", "General"]
-            ).ask()
+            filter_labels = {
+                "All": "🌐 All",
+                "Reasoning": "🧠 Reasoning",
+                "Builder": "⚒️  Builder",
+                "General": "⚡ General",
+            }
+            filter_choice = tui_select(
+                title="Select category to view:",
+                choices=["All", "Reasoning", "Builder", "General"],
+                format_func=lambda x: filter_labels.get(x, str(x)),
+                header=header_view,
+                footer=footer_text,
+            )
             if filter_choice:
                 current_filter = filter_choice
-                
+
         elif choice == "inspect":
-            if not models:
+            filtered_models = [m for m in models if current_filter == "All" or m.role == current_filter]
+            if not filtered_models:
+                no_models_panel = create_header_panel(
+                    Text("No models available for the selected category.", style="yellow"),
+                    "Select Model",
+                )
+                tui_confirm(
+                    prompt="No models found. Press Enter to return.",
+                    header=no_models_panel,
+                    footer=footer_text,
+                )
                 continue
-                
-            model_choices = []
-            for m in models:
-                if current_filter != "All" and m.role != current_filter: continue
-                model_choices.append(questionary.Choice(f"{m.name} ({m.disk_gb:.1f} GB)", m))
-            model_choices.append(questionary.Choice("⬅️ Cancel", "cancel"))
-            
-            selected_m = questionary.select(
-                "Select a model:",
-                choices=model_choices
-            ).ask()
-            
+
+            model_choices: List[Any] = list(filtered_models)
+            model_choices.append("cancel")
+
+            selected_m = tui_select(
+                title="Select a model:",
+                choices=model_choices,
+                format_func=lambda item: f"{item.name} ({item.disk_gb:.1f} GB)"
+                if isinstance(item, ModelMetadata)
+                else "⬅️  Cancel",
+                header=header_view,
+                footer=footer_text,
+            )
+
             if not selected_m or selected_m == "cancel":
                 continue
-                
+
             _model_action_menu(selected_m)
 
         elif choice == "download":
             download_model()
+
 
 def _model_action_menu(model: ModelMetadata):
     """Interactive submenu for performing actions on a selected model."""
@@ -301,93 +338,126 @@ def _model_action_menu(model: ModelMetadata):
         details.append(f"{model.ram_estimate_gb:.1f} GB\n", style="dim")
         details.append("Quant: ", style="bold white")
         details.append(f"{model.quant_details}\n", style="dim")
-        
+
         panel = create_header_panel(details, model.name)
-        
-        render_centered_view(panel, prompt_lines=7)
-        
-        action = questionary.select(
-            f"Actions for {model.name}:",
-            choices=[
-                questionary.Choice("▶️  Run Model (Chat)", "run"),
-                questionary.Choice("🌐 Serve Model (API)", "serve"),
-                questionary.Choice("ℹ️  View Detailed Metadata", "meta"),
-                questionary.Choice("🗑️  Delete Model", "delete"),
-                questionary.Choice("⬅️  Return to Model List", "back")
-            ]
-        ).ask()
-        
+        footer_text = get_system_status_footer()
+
+        action_labels = {
+            "run": "▶️  Run Model (Chat)",
+            "serve": "🌐 Serve Model (API)",
+            "meta": "ℹ️  View Detailed Metadata",
+            "delete": "🗑️  Delete Model",
+            "back": "⬅️  Return to Model List",
+        }
+
+        action = tui_select(
+            title=f"Actions for {model.name}:",
+            choices=["run", "serve", "meta", "delete", "back"],
+            format_func=lambda x: action_labels.get(x, str(x)),
+            header=panel,
+            footer=footer_text,
+        )
+
         if not action or action == "back":
             break
-            
+
         if action == "run":
-            console.print("\n[yellow]Direct MLX inference is launching...[/]")
-            subprocess.run(["python3", "-m", "mlx_lm.generate", "--model", model.repo_id, "--prompt", "Hello!"])
-            console.print("\n[dim]Press Enter to return...[/]", end="")
-            input()
-            
+            print("\nDirect MLX inference is launching...")
+            subprocess.run([sys.executable, "-m", "mlx_lm.generate", "--model", model.repo_id, "--prompt", "Hello!"])
+            input("\nPress Enter to return...")
+
         elif action == "serve":
-            console.print("\n[yellow]Starting OpenAI-compatible server on port 8080...[/]")
+            print("\nStarting OpenAI-compatible server on port 8080...")
             try:
-                subprocess.run(["python3", "-m", "mlx_lm.server", "--model", model.repo_id, "--port", "8080"])
+                subprocess.run([sys.executable, "-m", "mlx_lm.server", "--model", model.repo_id, "--port", "8080"])
             except KeyboardInterrupt:
-                console.print("\n[green]Server stopped.[/]")
-                
+                print("\nServer stopped.")
+
         elif action == "meta":
-            console.print("\n[bold white]Config.json extracted specs:[/]")
-            import pprint
-            pprint.pprint(model.raw_info.get("specs", {}))
-            console.print(f"\n[dim]Cache Path: {model.raw_info.get('model_dir')}[/]")
-            console.print("\n[dim]Press Enter to return...[/]", end="")
-            input()
-            
+            meta_text = Text()
+            meta_text.append("Config extracted specs:\n", style="bold white")
+            specs = model.raw_info.get("specs", {})
+            if specs:
+                for k, v in specs.items():
+                    meta_text.append(f"  • {k}: ", style="cyan")
+                    meta_text.append(f"{v}\n", style="white")
+            else:
+                meta_text.append("  (No extra specs found in config.json)\n", style="dim")
+            meta_text.append(f"\nCache Path: {model.raw_info.get('model_dir')}", style="dim")
+
+            meta_panel = create_header_panel(meta_text, f"Metadata: {model.name}")
+            tui_confirm(
+                prompt="Press Enter or Esc to return to model actions.",
+                header=meta_panel,
+                footer=footer_text,
+            )
+
         elif action == "delete":
-            confirm = questionary.confirm(
-                f"⚠️ Are you sure you want to permanently delete {model.name} (reclaiming {model.disk_gb:.1f} GB)?"
-            ).ask()
-            
+            confirm = tui_confirm(
+                prompt=f"⚠️ Permanently delete {model.name} (reclaim {model.disk_gb:.1f} GB)?",
+                header=panel,
+                footer=footer_text,
+            )
+
             if confirm:
                 try:
                     freed = delete_model_from_disk(model.repo_id)
                     result_text = Text(f"✔ Successfully deleted. Reclaimed {freed / (1024**3):.1f} GB.", style="bold green")
-                    render_centered_view(create_warning_panel(result_text, "Model Deleted"), prompt_lines=0)
-                    time.sleep(1.5)
-                    break # Go back after deletion
+                    result_panel = create_warning_panel(result_text, "Model Deleted")
+                    tui_confirm(
+                        prompt="Model deleted. Press Enter to continue.",
+                        header=result_panel,
+                        footer=footer_text,
+                    )
+                    break  # Go back after deletion
                 except Exception as e:
                     err_text = Text(f"✖ Failed to delete: {e}", style="bold red")
-                    render_centered_view(create_warning_panel(err_text, "Delete Failed"), prompt_lines=0)
-                    time.sleep(2)
+                    err_panel = create_warning_panel(err_text, "Delete Failed")
+                    tui_confirm(
+                        prompt="Error occurred. Press Enter to return.",
+                        header=err_panel,
+                        footer=footer_text,
+                    )
+
 
 def download_model():
     prompt_text = Text("Enter a HuggingFace model ID (e.g., mlx-community/Qwen3.6-27B-4bit)", style="dim")
     panel = create_header_panel(prompt_text, "Download New Model")
-    render_centered_view(panel, prompt_lines=2)
-    
-    model_id = questionary.text("Model ID:").ask()
+    footer_text = get_system_status_footer()
+
+    model_id = tui_text_input(
+        prompt="Model ID:",
+        header=panel,
+        footer=footer_text,
+    )
     if not model_id:
         return
-        
+
     model_id = model_id.replace("https://huggingface.co/", "").strip("/")
     if "/" not in model_id:
         err_text = Text("Invalid format. Expected org/model-name", style="bold red")
-        render_centered_view(create_warning_panel(err_text, "Invalid Format"), prompt_lines=0)
-        time.sleep(1.5)
+        err_panel = create_warning_panel(err_text, "Invalid Format")
+        tui_confirm(
+            prompt="Invalid format. Press Enter to return.",
+            header=err_panel,
+            footer=footer_text,
+        )
         return
 
-    console.print(f"\n[yellow]Downloading {model_id}...[/]")
+    print(f"\nDownloading {model_id}...")
     try:
         from mlx_man.model_downloader import download_model as _download
         _download(model_id)
     except KeyboardInterrupt:
-        console.print("\n[yellow]Download interrupted.[/]")
+        print("\nDownload interrupted.")
     except Exception as e:
-        console.print(f"\n[red]Download failed: {e}[/]")
+        print(f"\nDownload failed: {e}")
 
-    console.print("\n[dim]Press Enter to continue...[/]", end="")
-    input()
+    input("\nPress Enter to continue...")
+
 
 if __name__ == "__main__":
     try:
         run_model_inspector()
     except KeyboardInterrupt:
-        console.print("\n[green]✔ Goodbye![/]")
+        print("\n  \033[32m✔\033[0m  Goodbye! 👋\n")

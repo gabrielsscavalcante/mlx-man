@@ -1,7 +1,7 @@
 """
 test_cli.py — Tests for the main menu routing and action dispatching.
 
-All tests mock the centered_select() selector and the rendering layers
+All tests mock the main_menu_select() selector and the rendering layers
 to verify that user selections route to the correct action handlers
 without side effects or actual terminal I/O.
 """
@@ -17,7 +17,7 @@ from mlx_man.cli_actions import action_run_server
 # ─────────────────────────────────────────────────────────────────────────────
 
 @patch('mlx_man.main.action_run_server')
-@patch('mlx_man.main.centered_select')
+@patch('mlx_man.main.main_menu_select')
 @patch('builtins.input', return_value='')
 def test_main_menu_routing_run_server(mock_input, mock_select, mock_run_server):
     """Selecting 'run' routes to action_run_server."""
@@ -27,7 +27,7 @@ def test_main_menu_routing_run_server(mock_input, mock_select, mock_run_server):
 
 
 @patch('mlx_man.main.run_memory_cleaner')
-@patch('mlx_man.main.centered_select')
+@patch('mlx_man.main.main_menu_select')
 @patch('builtins.input', return_value='')
 def test_main_menu_routing_clean_ram(mock_input, mock_select, mock_clean):
     """Selecting 'clean' routes to run_memory_cleaner."""
@@ -37,7 +37,7 @@ def test_main_menu_routing_clean_ram(mock_input, mock_select, mock_clean):
 
 
 @patch('mlx_man.main.run_model_inspector')
-@patch('mlx_man.main.centered_select')
+@patch('mlx_man.main.main_menu_select')
 @patch('builtins.input', return_value='')
 def test_main_menu_routing_manage_models(mock_input, mock_select, mock_manage):
     """Selecting 'manage' routes to run_model_inspector."""
@@ -47,7 +47,7 @@ def test_main_menu_routing_manage_models(mock_input, mock_select, mock_manage):
 
 
 @patch('mlx_man.main.run_insights_history')
-@patch('mlx_man.main.centered_select')
+@patch('mlx_man.main.main_menu_select')
 @patch('builtins.input', return_value='')
 def test_main_menu_routing_insights(mock_input, mock_select, mock_insights):
     """Selecting 'insights' routes to run_insights_history."""
@@ -56,14 +56,14 @@ def test_main_menu_routing_insights(mock_input, mock_select, mock_insights):
     mock_insights.assert_called_once()
 
 
-@patch('mlx_man.main.centered_select')
+@patch('mlx_man.main.main_menu_select')
 def test_main_menu_exit_on_none(mock_select):
     """Returning None from the selector (Escape) exits gracefully."""
     mock_select.return_value = None
     main()  # Should not raise
 
 
-@patch('mlx_man.main.centered_select')
+@patch('mlx_man.main.main_menu_select')
 def test_main_menu_exit_on_exit_choice(mock_select):
     """Selecting 'exit' exits gracefully."""
     mock_select.return_value = 'exit'
@@ -135,7 +135,7 @@ def test_legacy_get_system_dashboard():
 
 def test_menu_panel_renders_inside_centered_frame():
     """
-    Simulate what centered_select renders: menu items inside a Panel,
+    Simulate what main_menu_select renders: menu items inside a Panel,
     wrapped in a Group with header and footer content.
     """
     from rich.console import Console, Group

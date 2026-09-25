@@ -29,8 +29,8 @@ and domain logic must not render output.
 src/mlx_man/
 ├── Presentation Layer (CLI / TUI)
 │   ├── main.py               # Main CLI loop & alternate screen buffer
-│   ├── cli_select.py          # Spotlight-style centered selector & keypress engine
-│   ├── cli_layout.py          # Dynamic terminal centering & persistent footer
+│   ├── tui_engine.py          # Centralized rich.live.Live TUI Engine and native input
+│   ├── ui_components.py       # Reusable layout components (panels, tables)
 │   ├── cli_dashboard.py       # ASCII logo, hardware detection, & rotating tips
 │   ├── cli_actions.py         # Action handlers (server launcher, memory cleaner)
 │   ├── ram_manager_view.py    # Memory cleaner UI with process termination
@@ -52,7 +52,7 @@ src/mlx_man/
 
 | Layer | Can import from | Cannot import from |
 |---|---|---|
-| Presentation | Domain, Infrastructure, third-party (`rich`, `questionary`) | — |
+| Presentation | Domain, Infrastructure, third-party (`rich`). NO blocking libraries like `questionary`. | — |
 | Domain | Standard library only | Presentation, Infrastructure |
 | Infrastructure | Domain, standard library, third-party (`psutil`, `huggingface_hub`, `mlx_lm`) | Presentation |
 

@@ -1,9 +1,8 @@
 import os
 import json
 import datetime
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Any
 from dataclasses import dataclass
-import questionary
 from rich.console import Console, Group
 from rich.text import Text
 
@@ -11,7 +10,8 @@ from mlx_man.model_registry import get_registry_entry
 from mlx_man.model_manager import get_installed_models, delete_model_from_disk
 from mlx_man.usage_tracker import HISTORY_FILE
 from mlx_man.ui_components import create_header_panel, create_data_table, create_warning_panel
-from mlx_man.cli_layout import render_centered_view
+from mlx_man.tui_engine import tui_select, tui_confirm
+from mlx_man.cli_dashboard import get_system_status_footer
 
 console = Console()
 
@@ -224,66 +224,80 @@ def run_insights_history():
     while True:
         models = gather_models()
         view = get_insights_view(models, current_filter)
-        
-        render_centered_view(view, prompt_lines=5)
-        
-        choice = questionary.select(
-            "Select action:",
-            choices=[
-                questionary.Choice("🗑️  Remove Model(s)", "remove"),
-                questionary.Choice("📊 Filter by Category", "filter"),
-                questionary.Choice("⬅️  Back to Main Menu", "back")
-            ]
-        ).ask()
+
+        choice = tui_select(
+            title="Select action:",
+            choices=["remove", "filter", "back"],
+            format_func=lambda x: {
+                "remove": "🗑️  Remove Model(s)",
+                "filter": "📊 Filter by Category",
+                "back": "⬅️  Back to Main Menu",
+            }.get(x, str(x)),
+            header=view,
+            footer=get_system_status_footer(),
+        )
 
         if not choice or choice == "back":
             break
-            
+
         if choice == "filter":
-            filter_choice = questionary.select(
-                "Select category to view:",
-                choices=["All", "Reasoning", "Build", "General"]
-            ).ask()
+            filter_choice = tui_select(
+                title="Select category to view:",
+                choices=["All", "Reasoning", "Build", "General"],
+                format_func=lambda x: str(x),
+                header=view,
+                footer=get_system_status_footer(),
+            )
             if filter_choice:
                 current_filter = filter_choice
-                
+
         elif choice == "remove":
             # Show list of models to delete
             if not models:
                 continue
-                
-            model_choices = []
-            for m in sorted(models, key=lambda x: x.times_used):
-                display = f"{m.name} ({m.size_gb:.1f} GB) - {m.times_used} uses"
-                model_choices.append(questionary.Choice(display, m))
-            model_choices.append(questionary.Choice("Cancel", "cancel"))
-            
-            selected_model = questionary.select(
-                "Select model to completely remove:",
-                choices=model_choices
-            ).ask()
-            
+
+            sorted_models = sorted(models, key=lambda x: x.times_used)
+            remove_choices: List[Any] = list(sorted_models) + ["cancel"]
+
+            selected_model = tui_select(
+                title="Select model to completely remove:",
+                choices=remove_choices,
+                format_func=lambda m: (
+                    f"{m.name} ({m.size_gb:.1f} GB) - {m.times_used} uses"
+                    if isinstance(m, ModelInfo) or (hasattr(m, "name") and hasattr(m, "size_gb") and hasattr(m, "times_used"))
+                    else "Cancel"
+                ),
+                header=view,
+                footer=get_system_status_footer(),
+                width=70,
+            )
+
             if not selected_model or selected_model == "cancel":
                 continue
-                
-            confirm = questionary.confirm(
-                f"⚠️ Are you sure you want to permanently delete {selected_model.name} (reclaiming {selected_model.size_gb:.1f} GB)?"
-            ).ask()
-            
+
+            confirm = tui_confirm(
+                prompt=f"⚠️ Are you sure you want to permanently delete {selected_model.name} (reclaiming {selected_model.size_gb:.1f} GB)?",
+                header=view,
+                footer=get_system_status_footer(),
+            )
+
             if confirm:
                 try:
                     freed = delete_model_from_disk(selected_model.repo_id)
                     freed_gb = format_bytes_gb(freed)
                     msg = Text()
                     msg.append(f"✔  Successfully deleted {selected_model.name}.\n", style="green")
-                    msg.append(f"Reclaimed {freed_gb:.1f} GB.\n\n", style="white")
-                    msg.append("Press Enter to continue...", style="dim")
-                    render_centered_view(create_warning_panel(msg, title="Success"), prompt_lines=0)
+                    msg.append(f"Reclaimed {freed_gb:.1f} GB.", style="white")
+                    result_panel = create_warning_panel(msg, title="Success")
                 except Exception as e:
                     msg = Text()
-                    msg.append(f"✖  Failed to delete: {e}\n\n", style="red")
-                    msg.append("Press Enter to continue...", style="dim")
-                    render_centered_view(create_warning_panel(msg, title="Failure"), prompt_lines=0)
-                
-                # Pause before refreshing
-                input()
+                    msg.append(f"✖  Failed to delete: {e}", style="red")
+                    result_panel = create_warning_panel(msg, title="Failure")
+
+                tui_select(
+                    title="",
+                    choices=["continue"],
+                    format_func=lambda _: "Press Enter to continue...",
+                    header=result_panel,
+                    footer=get_system_status_footer(),
+                )
