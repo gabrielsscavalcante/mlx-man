@@ -17,6 +17,7 @@ from mlx_man.cli_dashboard import (
     console,
 )
 
+from mlx_man.hub_search_view import action_search_hub
 from mlx_man.cli_actions import (
     action_run_server,
     run_memory_cleaner,
@@ -35,6 +36,7 @@ MENU_ITEMS = [
     ("📦  Manage Models",        "manage"),
     ("📊  Insights & History",   "insights"),
     ("🔄  Sync Models",          "sync"),
+    ("🔍  Search Hub",           "search"),
     None,                        # visual separator
     ("⏻   Exit",                 "exit"),
 ]
