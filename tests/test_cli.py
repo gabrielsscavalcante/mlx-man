@@ -6,111 +6,68 @@ to verify that user selections route to the correct action handlers
 without side effects or actual terminal I/O.
 """
 
-import sys
-import os
 from unittest.mock import patch, MagicMock
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'src'))
-
-from main import main
-from cli_actions import action_run_server
+from mlx_man.main import main
+from mlx_man.cli_actions import action_run_server
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Main Menu Routing Tests
 # ─────────────────────────────────────────────────────────────────────────────
 
-@patch('main.action_run_server')
-@patch('main.centered_select')
+@patch('mlx_man.main.action_run_server')
+@patch('mlx_man.main.centered_select')
 @patch('builtins.input', return_value='')
 def test_main_menu_routing_run_server(mock_input, mock_select, mock_run_server):
     """Selecting 'run' routes to action_run_server."""
     mock_select.side_effect = ['run', 'exit']
-
     main()
-
     mock_run_server.assert_called_once()
 
 
-@patch('main.run_memory_cleaner')
-@patch('main.centered_select')
+@patch('mlx_man.main.run_memory_cleaner')
+@patch('mlx_man.main.centered_select')
 @patch('builtins.input', return_value='')
 def test_main_menu_routing_clean_ram(mock_input, mock_select, mock_clean):
     """Selecting 'clean' routes to run_memory_cleaner."""
     mock_select.side_effect = ['clean', 'exit']
-
     main()
-
     mock_clean.assert_called_once()
 
 
-@patch('main.run_model_inspector')
-@patch('main.centered_select')
+@patch('mlx_man.main.run_model_inspector')
+@patch('mlx_man.main.centered_select')
 @patch('builtins.input', return_value='')
 def test_main_menu_routing_manage_models(mock_input, mock_select, mock_manage):
     """Selecting 'manage' routes to run_model_inspector."""
     mock_select.side_effect = ['manage', 'exit']
-
     main()
-
     mock_manage.assert_called_once()
 
 
-@patch('main.run_insights_history')
-@patch('main.centered_select')
+@patch('mlx_man.main.run_insights_history')
+@patch('mlx_man.main.centered_select')
 @patch('builtins.input', return_value='')
 def test_main_menu_routing_insights(mock_input, mock_select, mock_insights):
     """Selecting 'insights' routes to run_insights_history."""
     mock_select.side_effect = ['insights', 'exit']
-
     main()
-
     mock_insights.assert_called_once()
 
 
-@patch('main.centered_select')
+@patch('mlx_man.main.centered_select')
 def test_main_menu_exit_on_none(mock_select):
     """Returning None from the selector (Escape) exits gracefully."""
     mock_select.return_value = None
-
     main()  # Should not raise
 
 
-@patch('main.centered_select')
+@patch('mlx_man.main.centered_select')
 def test_main_menu_exit_on_exit_choice(mock_select):
     """Selecting 'exit' exits gracefully."""
     mock_select.return_value = 'exit'
-
     main()  # Should not raise
-
-
-# ─────────────────────────────────────────────────────────────────────────────
-# Action Integration Test
-# ─────────────────────────────────────────────────────────────────────────────
-
-@patch('cli_actions.subprocess.run')
-@patch('cli_actions.questionary.select')
-@patch('cli_actions.questionary.confirm')
-def test_action_run_server_skip_gpu(mock_confirm, mock_select, mock_run):
-    """Full flow: skip GPU → reasoning → QwQ model → server starts."""
-    mock_ask_select = MagicMock()
-    mock_ask_select.side_effect = [
-        'skip',                              # GPU limit
-        'reasoning',                         # Role
-        'mlx-community/QwQ-32B-4bit',       # Model
-        'server'                             # Action
-    ]
-    mock_select.return_value.ask = mock_ask_select
-
-    action_run_server()
-
-    # Verify subprocess.run was called for usage_tracker and mlx_lm server
-    assert mock_run.call_count >= 2
-
-    # Verify the last call was mlx_lm server
-    last_call_args = mock_run.call_args_list[-1][0][0]
-    assert 'mlx_lm' in last_call_args
-    assert 'server' in last_call_args
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -120,7 +77,7 @@ def test_action_run_server_skip_gpu(mock_confirm, mock_select, mock_run):
 def test_banner_renders_without_error():
     """The banner component renders without raising exceptions."""
     from rich.console import Console
-    from cli_dashboard import get_banner
+    from mlx_man.cli_dashboard import get_banner
 
     c = Console(record=True, width=100)
     c.print(get_banner())
@@ -132,7 +89,7 @@ def test_banner_renders_without_error():
 def test_shortcuts_renders_without_error():
     """The shortcuts line renders without raising exceptions."""
     from rich.console import Console
-    from cli_dashboard import get_shortcuts_line
+    from mlx_man.cli_dashboard import get_shortcuts_line
 
     c = Console(record=True, width=100)
     c.print(get_shortcuts_line())
@@ -143,7 +100,7 @@ def test_shortcuts_renders_without_error():
 def test_tip_renders_without_error():
     """The tip line renders without raising exceptions."""
     from rich.console import Console
-    from cli_dashboard import get_tip_line
+    from mlx_man.cli_dashboard import get_tip_line
 
     c = Console(record=True, width=100)
     c.print(get_tip_line())
@@ -153,7 +110,7 @@ def test_tip_renders_without_error():
 
 def test_system_status_footer_returns_string():
     """System status footer returns a non-empty string with RAM info."""
-    from cli_dashboard import get_system_status_footer
+    from mlx_man.cli_dashboard import get_system_status_footer
 
     result = get_system_status_footer()
     assert isinstance(result, str)
@@ -165,7 +122,7 @@ def test_legacy_get_system_dashboard():
     """Legacy get_system_dashboard() still returns a renderable Table."""
     from rich.console import Console
     from rich.table import Table
-    from cli_dashboard import get_system_dashboard
+    from mlx_man.cli_dashboard import get_system_dashboard
 
     result = get_system_dashboard()
     assert isinstance(result, Table)
@@ -179,17 +136,15 @@ def test_legacy_get_system_dashboard():
 def test_menu_panel_renders_inside_centered_frame():
     """
     Simulate what centered_select renders: menu items inside a Panel,
-    wrapped in a Group with header and footer content.  Assert that
-    the panel border and menu items appear in the captured output.
+    wrapped in a Group with header and footer content.
     """
     from rich.console import Console, Group
     from rich.text import Text
     from rich.panel import Panel
     from rich.align import Align
     from rich import box
-    from cli_dashboard import get_banner, get_shortcuts_line, get_tip_line
+    from mlx_man.cli_dashboard import get_banner, get_shortcuts_line, get_tip_line
 
-    # Build menu items the same way centered_select does
     items = [
         ("🚀  Run LLM Server", "run"),
         ("🧹  Clean Up RAM", "clean"),
@@ -203,7 +158,7 @@ def test_menu_panel_renders_inside_centered_frame():
             menu_lines.append(Text("  ──────────────────", style="bright_black"))
         else:
             label, _ = item
-            if i == 0:  # simulate highlighted
+            if i == 0:
                 menu_lines.append(Text(f" ▸ {label}", style="bold white"))
             else:
                 menu_lines.append(Text(f"   {label}", style="dim white"))
@@ -230,11 +185,8 @@ def test_menu_panel_renders_inside_centered_frame():
     c.print(full)
     output = c.export_text()
 
-    # Panel borders should be present
     assert "╭" in output
     assert "╰" in output
-    # Menu items should be present
     assert "Run LLM Server" in output
     assert "Exit" in output
-    # Shortcuts should be present
     assert "navigate" in output

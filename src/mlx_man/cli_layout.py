@@ -153,7 +153,7 @@ def render_page(renderable: RenderableType, top_padding: int = -1):
     Legacy wrapper for backward compatibility with existing code.
     Renders centered content with the old interface signature.
     """
-    from cli_dashboard import get_system_status_footer
+    from mlx_man.cli_dashboard import get_system_status_footer
     render_centered_view(
         content_block=renderable,
         footer_status=get_system_status_footer(),

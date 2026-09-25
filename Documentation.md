@@ -9,8 +9,11 @@
 
 ```bash
 cd mlx-man
-./start_llm.sh
+mlx-man
 ```
+
+> [!TIP]
+> You can also launch MLX-Man using `./start_llm.sh` or `python -m mlx_man`.
 
 ---
 
@@ -121,16 +124,38 @@ Just open a new terminal tab and run `opencode` while the server is running.
 
 ```
 mlx-man/
-├── start_llm.sh              # Main CLI entry point
-├── src/
-│   ├── cli_ui.sh             # Shell UI library (colors, prompts, system info)
-│   ├── memory_cleaner.py     # RAM cleanup tool
-│   ├── model_downloader.py   # Dedicated HuggingFace model downloader
-│   ├── model_inspector.py    # Model browser, inspector, downloader, deleter
-│   └── model_registry.py     # Curated model knowledge base (roles, specs, metadata)
-├── Documentation.md          # This file
+├── pyproject.toml            # Modern Python packaging configuration (Hatchling)
+├── Makefile                  # Developer workflow targets (install, test, lint, run)
+├── start_llm.sh              # Shell launcher script (resolves Python & .venv)
+├── Documentation.md          # In-depth architectural & usage documentation
+├── CONTRIBUTING.md           # Contributor guidelines
 ├── CHANGELOG.md              # Version history
-└── ~/opencode_mlx_qwen/.venv # Python virtual environment with mlx-lm
+├── LICENSE                   # MIT License
+├── src/
+│   └── mlx_man/
+│       ├── __init__.py       # Package definition & centralized version string
+│       ├── __main__.py       # Support for `python -m mlx_man` execution
+│       ├── main.py           # Main CLI loop & alternate screen buffer
+│       ├── cli_select.py     # Spotlight-style centered selector & keypress engine
+│       ├── cli_layout.py     # Dynamic terminal centering & persistent footer
+│       ├── cli_dashboard.py  # ASCII logo, hardware detection, & rotating tips
+│       ├── cli_actions.py    # Subsystem action handlers (direct function calls)
+│       ├── model_registry.py # Curated model knowledge base (roles, specs, metadata)
+│       ├── model_manager.py  # HF cache scanner, size calculator, safe deleter
+│       ├── model_inspector.py # Model browser, technical spec cards, downloader
+│       ├── model_downloader.py # Dedicated Hugging Face model downloader
+│       ├── process_service.py # Process monitoring service for RAM management
+│       ├── ram_manager_view.py # Memory cleaner UI with process termination
+│       ├── usage_tracker.py  # Local usage recording and session statistics
+│       ├── insights_view.py  # Historical usage analytics dashboard
+│       └── opencode_sync.py  # OpenCode CLI configuration sync
+└── tests/
+    ├── conftest.py           # Shared test fixtures & mocks
+    ├── test_setup.py         # Packaging, importability, & XDG compliance tests
+    ├── test_cli.py           # CLI routing & rendering assertions
+    ├── test_ram_cleaner.py   # Process discovery & termination mock tests
+    ├── test_models_view.py   # Model manager & inspector view tests
+    └── test_insights.py      # Usage tracking & analytics tests
 ```
 
 ---
@@ -149,6 +174,6 @@ mlx-man/
 
 ## Requirements
 
-- macOS with Apple Silicon (M-series chip, M6 tested)
-- Python 3.9+ (system Python is fine)
-- Virtual environment at `~/opencode_mlx_qwen/.venv` with `mlx-lm` installed
+- macOS with Apple Silicon (M-series chip: M1 through M6 tested)
+- Python 3.9+ (system Python or Homebrew)
+- Dependencies managed via `pyproject.toml` (install via `pip install -e .` or `uv pip install -e .`)

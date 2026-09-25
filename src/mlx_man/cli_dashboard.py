@@ -21,7 +21,7 @@ from rich import box
 
 console = Console()
 
-CLI_VERSION = "0.3.0"
+from mlx_man import __version__ as CLI_VERSION
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Sleek ASCII Logo — OpenCode-inspired muted aesthetic

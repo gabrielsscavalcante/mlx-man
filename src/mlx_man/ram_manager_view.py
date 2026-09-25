@@ -6,10 +6,7 @@ from rich.table import Table
 from rich.align import Align
 import questionary
 
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.append(SCRIPT_DIR)
-
-from process_service import ProcessService, ProcessInfo
+from mlx_man.process_service import ProcessService, ProcessInfo
 
 console = Console()
 

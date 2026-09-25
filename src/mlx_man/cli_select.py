@@ -24,7 +24,7 @@ from rich.align import Align
 from rich.panel import Panel
 from rich import box
 
-from cli_layout import get_real_terminal_size, get_project_path
+from mlx_man.cli_layout import get_real_terminal_size, get_project_path
 
 
 # Type alias: a menu item is (display_label, return_value), or None for separator

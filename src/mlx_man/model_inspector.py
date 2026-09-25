@@ -21,12 +21,10 @@ from rich.table import Table
 from rich.text import Text
 import questionary
 
-# Ensure we can import siblings
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from model_registry import MODEL_REGISTRY, get_registry_entry, ROLE_INFO
-from model_manager import delete_model_from_disk, HF_CACHE_DIR, MODEL_DIR_PREFIX, calculate_model_disk_size
-from cli_dashboard import get_total_ram_gb, get_current_gpu_limit
-from cli_layout import render_page
+from mlx_man.model_registry import MODEL_REGISTRY, get_registry_entry, ROLE_INFO
+from mlx_man.model_manager import delete_model_from_disk, HF_CACHE_DIR, MODEL_DIR_PREFIX, calculate_model_disk_size
+from mlx_man.cli_dashboard import get_total_ram_gb, get_current_gpu_limit
+from mlx_man.cli_layout import render_page
 
 console = Console()
 
@@ -386,18 +384,17 @@ def download_model():
         time.sleep(1.5)
         return
         
-    venv_python = Path.home() / "opencode_mlx_qwen" / ".venv" / "bin" / "python3"
-    downloader_script = Path(__file__).parent / "model_downloader.py"
-    
+
+
     console.print(f"\n[yellow]Downloading {model_id}...[/]")
     try:
-        if venv_python.exists():
-            subprocess.run([str(venv_python), str(downloader_script), model_id])
-        else:
-            subprocess.run(["python3", "-m", "mlx_lm.download", "--model", model_id])
+        from mlx_man.model_downloader import download_model as _download
+        _download(model_id)
     except KeyboardInterrupt:
         console.print("\n[yellow]Download interrupted.[/]")
-    
+    except Exception as e:
+        console.print(f"\n[red]Download failed: {e}[/]")
+
     console.print("\n[dim]Press Enter to continue...[/]", end="")
     input()
 

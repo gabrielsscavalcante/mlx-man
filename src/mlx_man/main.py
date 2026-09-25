@@ -10,16 +10,16 @@ import sys
 from rich.console import Group
 from rich.text import Text
 
-from cli_dashboard import (
+from mlx_man.cli_dashboard import (
     get_banner,
     get_shortcuts_line,
     get_tip_line,
     get_system_status_footer,
     console,
 )
-from cli_select import centered_select
+from mlx_man.cli_select import centered_select
 
-from cli_actions import (
+from mlx_man.cli_actions import (
     action_run_server,
     run_memory_cleaner,
     run_model_inspector,

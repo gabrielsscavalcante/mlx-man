@@ -72,22 +72,33 @@ git clone https://github.com/gabrielsscavalcante/mlx-man.git
 cd mlx-man
 ```
 
-### 2. Create and Activate a Virtual Environment
+### 2. Install MLX-Man
 
+**Using [uv](https://github.com/astral-sh/uv)** (recommended — faster):
+```bash
+uv venv
+source .venv/bin/activate
+uv pip install -e .
+```
+
+**Using standard pip:**
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+pip install -e .
 ```
 
 ### 3. Launch MLX-Man
 
 ```bash
-./start_llm.sh
+mlx-man
 ```
 
 > [!TIP]
-> The launcher script `./start_llm.sh` automatically detects `.venv` in the project directory, an active virtual environment, or a custom environment specified by the `MLX_VENV` variable (`export MLX_VENV=/path/to/venv`).
+> MLX-Man supports multiple ways to launch:
+> - `mlx-man` — Installed CLI command
+> - `./start_llm.sh` — Portable shell launcher (automatically detects `.venv` or `MLX_VENV`)
+> - `python -m mlx_man` — Direct module execution
 
 ---
 
@@ -209,32 +220,54 @@ MLX-Man follows a strict 3-tier architecture:
 
 ```
 mlx-man/
+├── pyproject.toml            # Modern Python packaging configuration (Hatchling)
+├── Makefile                  # Developer workflow targets (install, test, lint, run)
 ├── start_llm.sh              # Portable shell launcher (resolves Python & .venv)
-├── requirements.txt          # Core dependencies (mlx-lm, rich, questionary, psutil)
-├── requirements-dev.txt      # Development dependencies (pytest)
 ├── Documentation.md          # In-depth architectural & usage documentation
+├── CONTRIBUTING.md           # Contributor guidelines
 ├── CHANGELOG.md              # Version changelog
 ├── LICENSE                   # MIT License
 ├── src/
-│   ├── main.py               # Main CLI loop & alternate screen buffer
-│   ├── cli_select.py         # Spotlight-style centered selector & keypress engine
-│   ├── cli_layout.py         # Dynamic terminal centering & persistent footer
-│   ├── cli_dashboard.py      # ASCII logo, hardware detection, & rotating tips
-│   ├── cli_actions.py        # Action handlers (server launcher, memory cleaner)
-│   ├── model_registry.py     # Single source of truth for curated models & roles
-│   ├── model_manager.py      # HF cache scanner, size calculator, safe deleter
-│   ├── model_inspector.py    # Model browser, technical spec cards, downloader
-│   ├── process_service.py    # Process monitoring service for RAM management
-│   ├── ram_manager_view.py   # Memory cleaner UI with process termination
-│   ├── usage_tracker.py      # Local usage recording and session statistics
-│   ├── insights_view.py      # Historical usage analytics dashboard
-│   └── opencode_sync.py      # OpenCode CLI configuration sync
+│   └── mlx_man/
+│       ├── __init__.py       # Package definition & centralized version string
+│       ├── __main__.py       # Direct execution via `python -m mlx_man`
+│       ├── main.py           # Main CLI loop & alternate screen buffer
+│       ├── cli_select.py     # Spotlight-style centered selector & keypress engine
+│       ├── cli_layout.py     # Dynamic terminal centering & persistent footer
+│       ├── cli_dashboard.py  # ASCII logo, hardware detection, & rotating tips
+│       ├── cli_actions.py    # Direct action handlers (server launcher, memory cleaner)
+│       ├── model_registry.py # Single source of truth for curated models & roles
+│       ├── model_manager.py  # HF cache scanner, size calculator, safe deleter
+│       ├── model_inspector.py # Model browser, technical spec cards, downloader
+│       ├── model_downloader.py # Dedicated Hugging Face model downloader
+│       ├── process_service.py # Process monitoring service for RAM management
+│       ├── ram_manager_view.py # Memory cleaner UI with process termination
+│       ├── usage_tracker.py  # Local usage recording and session statistics
+│       ├── insights_view.py  # Historical usage analytics dashboard
+│       └── opencode_sync.py  # OpenCode CLI configuration sync
 └── tests/
+    ├── conftest.py           # Shared test fixtures & mocks
+    ├── test_setup.py         # Packaging, importability, & XDG compliance tests
     ├── test_cli.py           # CLI routing & rendering assertions
     ├── test_ram_cleaner.py   # Process discovery & termination mock tests
     ├── test_models_view.py   # Model manager & inspector view tests
     └── test_insights.py      # Usage tracking & analytics tests
 ```
+
+---
+
+## 💾 Data & Storage Directories
+
+MLX-Man adheres to the XDG Base Directory specification to keep user data separate from source code:
+
+| Path | Description |
+|---|---|
+| `~/.config/mlx-man/` | Application data and configuration directory |
+| `~/.config/mlx-man/usage_history.json` | Local session history, token counts, and analytics data |
+| `~/.cache/huggingface/hub/` | Hugging Face cache containing downloaded model weights and blobs |
+
+> [!NOTE]
+> `~/.config/mlx-man/` is created automatically on first run. If an existing `usage_history.json` file is present in the repository root from previous versions, MLX-Man performs an automatic one-time migration to `~/.config/mlx-man/`.
 
 ---
 
@@ -244,7 +277,7 @@ MLX-Man includes unit and rendering tests with 100% mock safety:
 
 ```bash
 # Install test dependencies
-pip install -r requirements-dev.txt
+pip install -e '.[dev]'
 
 # Run full test suite
 pytest

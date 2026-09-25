@@ -16,10 +16,7 @@ elif [ -n "${MLX_VENV:-}" ] && [ -f "$MLX_VENV/bin/python3" ]; then
 # 3. Check currently active virtual environment
 elif [ -n "${VIRTUAL_ENV:-}" ] && [ -f "$VIRTUAL_ENV/bin/python3" ]; then
     PYTHON="$VIRTUAL_ENV/bin/python3"
-# 4. Fallback to legacy path if present
-elif [ -f "/Users/gabrielcavalcante/opencode_mlx_qwen/.venv/bin/python3" ]; then
-    PYTHON="/Users/gabrielcavalcante/opencode_mlx_qwen/.venv/bin/python3"
-# 5. Check if system python3 has required dependencies
+# 4. Check if system python3 has required dependencies
 elif command -v python3 &>/dev/null && python3 -c "import mlx_lm, rich, questionary, psutil" &>/dev/null; then
     PYTHON="python3"
 else
@@ -40,4 +37,4 @@ else
 fi
 
 # Pass control completely to the Python UI
-exec "$PYTHON" "$SCRIPT_DIR/src/main.py" "$@"
+exec "$PYTHON" -m mlx_man "$@"

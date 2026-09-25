@@ -9,14 +9,14 @@ from rich.table import Table
 from rich.panel import Panel
 from rich.text import Text
 
-from model_registry import get_registry_entry, ROLE_INFO
-from model_manager import get_installed_models, delete_model_from_disk
-from cli_dashboard import console
+from mlx_man.model_registry import get_registry_entry, ROLE_INFO
+from mlx_man.model_manager import get_installed_models, delete_model_from_disk
+from mlx_man.cli_dashboard import console
+from mlx_man.usage_tracker import HISTORY_FILE
 
 console = Console()
 
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DATA_FILE = os.path.join(PROJECT_ROOT, ".model_usage_history.json")
+DATA_FILE = HISTORY_FILE  # Single source of truth from usage_tracker
 
 @dataclass
 class ModelInfo:
@@ -106,7 +106,7 @@ def gather_models() -> List[ModelInfo]:
     return models
 
 from rich.console import Group
-from cli_layout import render_page
+from mlx_man.cli_layout import render_page
 
 def generate_bar(value: float, total: float, width: int = 20, color: str = "white") -> str:
     if total <= 0:

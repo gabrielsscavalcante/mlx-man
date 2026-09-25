@@ -11,8 +11,7 @@ import os
 import sys
 from pathlib import Path
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from model_registry import MODEL_REGISTRY
+from mlx_man.model_registry import MODEL_REGISTRY
 
 OPENCODE_CONFIG = Path.home() / ".config" / "opencode" / "opencode.json"
 

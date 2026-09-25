@@ -2,6 +2,32 @@
 
 All notable changes to the MLX-Man project.
 
+## [0.4.0] — 2026-09-25
+
+### Added
+- **Modern Python Packaging** — Added `pyproject.toml` with hatchling build backend, making MLX-Man installable via `pip install -e .` or `uv pip install -e .`. The `mlx-man` CLI command is now available globally after installation.
+- **`python -m mlx_man` Support** — Added `__main__.py` so the package can be run directly with `python -m mlx_man`.
+- **XDG-Compliant Data Storage** — Usage history now stored at `~/.config/mlx-man/usage_history.json` instead of the project root. Includes automatic one-time migration of legacy data.
+- **Developer Tooling** — Added `Makefile` with common targets (`install`, `install-dev`, `test`, `test-cov`, `lint`, `clean`, `run`), `CONTRIBUTING.md` contributor guide, and `tests/conftest.py` with shared fixtures.
+- **Setup Tests** — New `tests/test_setup.py` verifying package importability, version format, config directory creation, XDG compliance, usage tracking, and absence of hardcoded paths.
+
+### Changed
+- **Package Structure** — Restructured `src/` into a proper Python package at `src/mlx_man/` with `__init__.py`.
+- **Import Refactor** — All imports updated from bare (`from model_registry import ...`) to package-qualified (`from mlx_man.model_registry import ...`). Removed all `sys.path` hacks from source files and tests.
+- **Direct Function Calls** — `cli_actions.py` now calls subsystem functions directly instead of spawning them as subprocesses.
+- **Centralized Version** — Version string now lives in `mlx_man/__init__.py` as single source of truth, read by `cli_dashboard.py` and `pyproject.toml`.
+- **Launcher Script** — `start_llm.sh` updated to use `python -m mlx_man` instead of direct script invocation.
+- Bumped `CLI_VERSION` to `0.4.0`.
+
+### Fixed
+- **Broken Import** — Removed dead import in `usage_tracker.py` that referenced non-existent symbols from `model_inspector.py` (caused `ImportError` on any direct use).
+- **Hardcoded Paths** — Removed all references to `/Users/gabrielcavalcante/opencode_mlx_qwen/.venv` from `start_llm.sh` and `model_inspector.py`.
+- **Version Mismatch** — Fixed `cli_dashboard.py` showing `0.3.0` while changelog said `0.3.1`.
+
+### Removed
+- `src/cli_ui.sh` — Unused legacy shell UI library (no Python code imported it).
+- `requirements.txt` / `requirements-dev.txt` — Kept for backward compatibility but dependencies are now managed via `pyproject.toml`.
+
 ## [0.3.1] — 2026-09-24
 
 ### Changed
