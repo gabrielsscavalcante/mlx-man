@@ -28,3 +28,8 @@ Domain Logic Tests: Verify cache scanning, size calculations, and orphaned blob 
 Safety Tests: Mock filesystem deletions and process kills to strictly verify that unconfirmed prompts abort safely and confirmed actions target the correct resources.
 Rendering Tests: Use `rich.console.Console(record=True)` to assert that UI views render cleanly. All TUI views MUST include snapshot tests that save SVG images using `Console.save_svg()` and strict string matching using baseline `.txt` snapshots (run with `UPDATE_SNAPSHOTS=1` to generate them).
 Test Environment: Tests no longer need `sys.path` hacks thanks to `pyproject.toml` (which declares `pythonpath = ["src"]` and allows editable installation via `pip install -e '.[dev]'`).
+
+5. Release Management & Git Tagging
+Main Branch Only: All software releases and Git tags (`vX.Y.Z`) MUST be created exclusively on the `main` branch. Never cut a release from a feature branch.
+Automated Release Script: Always use `./scripts/release.sh [patch|minor|major|x.y.z]` to prepare releases. The script verifies the test suite, bumps version numbers in lockstep, runs `scripts/update_docs.py` to keep `CHANGELOG.md` and `Documentation.md` updated, builds the wheel package, and creates the tag.
+Safety & Push Policy: Follow the strict "No Push Without Confirmation" rule. Never push release commits or tags without explicit prior approval from the user.

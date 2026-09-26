@@ -41,6 +41,17 @@ class TestPackageStructure:
             "mlx_man.process_service",
             "mlx_man.ram_manager_view",
             "mlx_man.usage_tracker",
+            "mlx_man.server_manager",
+            "mlx_man.server_dashboard_view",
+            "mlx_man.native_chat_view",
+            "mlx_man.tools",
+            "mlx_man.rag_engine",
+            "mlx_man.tui_engine",
+            "mlx_man.ui_components",
+            "mlx_man.hardware_recommender",
+            "mlx_man.hub_search_view",
+            "mlx_man.chat_history_view",
+            "mlx_man.chat_manager",
         ]
         for mod_name in modules:
             mod = importlib.import_module(mod_name)

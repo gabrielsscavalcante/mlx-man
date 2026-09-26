@@ -107,20 +107,9 @@ with open('tests/test_setup.py', 'w') as f:
     f.write(text)
 "
 
-# 7. Update CHANGELOG.md if release section doesn't exist yet
-TODAY=$(date +%Y-%m-%d)
-if ! grep -q "## \[$NEXT_VERSION\]" CHANGELOG.md; then
-    python3 -c "
-with open('CHANGELOG.md', 'r') as f:
-    content = f.read()
-
-header = '## [$NEXT_VERSION] — $TODAY\n\n### Added\n- Release version $NEXT_VERSION.\n\n'
-new_content = content.replace('# Changelog\n\nAll notable changes to the MLX-Man project.\n\n', '# Changelog\n\nAll notable changes to the MLX-Man project.\n\n' + header)
-with open('CHANGELOG.md', 'w') as f:
-    f.write(new_content)
-"
-    echo "   Updated CHANGELOG.md"
-fi
+# 7. Automatically update CHANGELOG.md and Documentation.md
+echo "📝 Updating CHANGELOG.md and verifying docs..."
+uv run python scripts/update_docs.py "$NEXT_VERSION"
 
 # 8. Test package build
 echo "📦 Testing distribution build..."
@@ -130,7 +119,7 @@ uv build
 uv run pytest tests/test_setup.py -v
 
 # 10. Git commit and tag
-git add src/mlx_man/__init__.py pyproject.toml tests/test_setup.py CHANGELOG.md
+git add src/mlx_man/__init__.py pyproject.toml tests/test_setup.py CHANGELOG.md Documentation.md README.md
 git commit -m "chore(release): bump version to v$NEXT_VERSION"
 git tag -a "v$NEXT_VERSION" -m "Release v$NEXT_VERSION"
 
