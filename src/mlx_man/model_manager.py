@@ -8,7 +8,9 @@ HF_CACHE_DIR = Path.home() / ".cache" / "huggingface" / "hub"
 MODEL_DIR_PREFIX = "models--"
 
 def get_model_cache_dir(model_id: str) -> Path:
-    """Return the expected cache directory for a model ID."""
+    """Return the expected cache directory for a model ID or local absolute path."""
+    if model_id.startswith("/"):
+        return Path(model_id)
     dir_name = MODEL_DIR_PREFIX + model_id.replace("/", "--")
     return HF_CACHE_DIR / dir_name
 

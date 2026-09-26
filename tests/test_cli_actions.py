@@ -381,3 +381,69 @@ def test_action_manage_server_stop_all(mock_get, mock_select, mock_confirm, mock
 def test_action_manage_server_stop_specific(mock_get, mock_select, mock_confirm, mock_stop):
     from mlx_man.cli_actions import action_manage_server
     action_manage_server()
+
+@patch("mlx_man.cli_actions.tui_text_input")
+@patch("mlx_man.cli_actions.tui_select")
+@patch("subprocess.run")
+@patch("mlx_man.model_registry.register_custom_model")
+def test_action_quantize_model_success(mock_register, mock_run, mock_select, mock_input):
+    from mlx_man.cli_actions import action_quantize_model
+    from pathlib import Path
+    import sys
+    
+    mock_input.side_effect = ["my_org/my_model", ""]
+    mock_select.side_effect = ["4"]
+    
+    action_quantize_model()
+    
+    dest_path = Path.home() / ".config" / "mlx-man" / "quantized" / "my_model-4bit"
+    
+    # Check that subprocess.run was called with the right args
+    called_args = mock_run.call_args[0][0]
+    assert called_args == [
+        sys.executable, "-m", "mlx_lm.convert",
+        "--hf-path", "my_org/my_model",
+        "--mlx-path", str(dest_path),
+        "-q", "--q-bits", "4"
+    ]
+    
+    mock_register.assert_called_once_with(str(dest_path), "my_model (4-bit Quantized)")
+
+@patch("mlx_man.cli_actions.tui_text_input")
+def test_action_quantize_model_cancel_repo(mock_input):
+    from mlx_man.cli_actions import action_quantize_model
+    mock_input.return_value = ""
+    action_quantize_model()
+
+@patch("mlx_man.cli_actions.tui_text_input")
+@patch("mlx_man.cli_actions.tui_select")
+def test_action_quantize_model_cancel_bits(mock_select, mock_input):
+    from mlx_man.cli_actions import action_quantize_model
+    mock_input.return_value = "org/model"
+    mock_select.return_value = "back"
+    action_quantize_model()
+
+@patch("mlx_man.cli_actions.tui_text_input")
+@patch("mlx_man.cli_actions.tui_select")
+@patch("subprocess.run")
+def test_action_quantize_model_subprocess_error(mock_run, mock_select, mock_input):
+    from mlx_man.cli_actions import action_quantize_model
+    import subprocess
+    
+    mock_input.side_effect = ["org/model", ""]
+    mock_select.return_value = "8"
+    mock_run.side_effect = subprocess.CalledProcessError(1, "cmd")
+    
+    action_quantize_model()
+    
+@patch("mlx_man.cli_actions.tui_text_input")
+@patch("mlx_man.cli_actions.tui_select")
+@patch("subprocess.run")
+def test_action_quantize_model_exception(mock_run, mock_select, mock_input):
+    from mlx_man.cli_actions import action_quantize_model
+    
+    mock_input.side_effect = ["org/model", ""]
+    mock_select.return_value = "8"
+    mock_run.side_effect = Exception("boom")
+    
+    action_quantize_model()

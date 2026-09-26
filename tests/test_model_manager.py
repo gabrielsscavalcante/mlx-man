@@ -189,3 +189,8 @@ def test_model_manager_exceptions_retry(mock_hf_cache):
 def test_get_installed_models_short_name(mock_hf_cache):
     (mock_hf_cache / "models--").mkdir()
     assert get_installed_models() == []
+
+def test_get_model_cache_dir_absolute_path():
+    from mlx_man.model_manager import get_model_cache_dir
+    from pathlib import Path
+    assert get_model_cache_dir("/custom/path/model") == Path("/custom/path/model")

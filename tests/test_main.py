@@ -43,3 +43,11 @@ def test_main_all_branches(mock_select, mock_sync, mock_history, mock_insights, 
     mock_insights.assert_called_once()
     mock_history.assert_called_once()
     mock_sync.assert_called_once()
+
+@patch("mlx_man.main.main_menu_select", side_effect=["quantize", "exit"])
+@patch("mlx_man.main.action_quantize_model")
+@patch("builtins.print")
+def test_main_menu_quantize(mock_print, mock_quantize, mock_select):
+    from mlx_man.main import main
+    main()
+    mock_quantize.assert_called_once()
