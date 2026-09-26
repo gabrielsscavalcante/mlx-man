@@ -26,6 +26,7 @@ from mlx_man.cli_actions import (
     run_insights_history,
     action_sync_models,
     action_manage_server,
+    action_quantize_model,
 )
 
 
@@ -42,6 +43,7 @@ def get_menu_items():
     items.extend([
         ("🧹  Clean Up RAM",         "clean"),
         ("📦  Manage Models",        "manage"),
+        ("🗜️  Quantize a Model",    "quantize"),
         ("📊  Insights & History",   "insights"),
         ("💬  Chat History",         "history"),
         ("🔄  Sync Models",          "sync"),
@@ -82,6 +84,8 @@ def main():
                 run_memory_cleaner()
             elif choice == "manage":
                 run_model_inspector()
+            elif choice == "quantize":
+                action_quantize_model()
             elif choice == "insights":
                 run_insights_history()
             elif choice == "history":

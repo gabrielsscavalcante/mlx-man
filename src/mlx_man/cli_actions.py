@@ -355,3 +355,72 @@ def action_manage_server():
     elif choice[0] == "logs":
         if LOG_FILE.exists():
             subprocess.run(["less", "+G", str(LOG_FILE)])
+
+def action_quantize_model():
+    """Interactive flow to quantize a Hugging Face model locally."""
+    from mlx_man.cli_dashboard import get_banner, get_system_status_footer
+    from mlx_man.ui_components import create_header_panel, create_warning_panel
+    from mlx_man.model_registry import register_custom_model
+    import subprocess
+    import sys
+    from pathlib import Path
+    
+    header = get_banner()
+    footer = get_system_status_footer()
+    
+    repo_id = tui_text_input(
+        prompt="Enter HuggingFace Repo ID (e.g. meta-llama/Llama-3.2-1B):",
+        header=header,
+        footer=footer
+    )
+    if not repo_id or "/" not in repo_id:
+        return
+        
+    bits_choice = tui_select(
+        title="Select Quantization Precision:",
+        items=[("4-bit (Recommended, ~25% size)", "4"), ("8-bit (~50% size)", "8"), ("Cancel", "back")],
+        header=header,
+        footer=footer
+    )
+    if not bits_choice or bits_choice == "back":
+        return
+        
+    repo_name = repo_id.split("/")[-1]
+    dest_path = Path.home() / ".config" / "mlx-man" / "quantized" / f"{repo_name}-{bits_choice}bit"
+    
+    print(f"\n  ℹ  Preparing to quantize {repo_id} to {bits_choice}-bit...")
+    print(f"  ℹ  Output directory: {dest_path}\n")
+    print("  (This will download the full model if not cached, then quantize it. This may take a while.)\n")
+    
+    try:
+        dest_path.mkdir(parents=True, exist_ok=True)
+        # Using mlx_lm.convert via subprocess
+        subprocess.run([
+            sys.executable, "-m", "mlx_lm.convert",
+            "--hf-path", repo_id,
+            "--mlx-path", str(dest_path),
+            "-q", "--q-bits", bits_choice
+        ], check=True)
+        
+        print("\n  ✔  Quantization complete!")
+        # Register the local model
+        name = f"{repo_name} ({bits_choice}-bit Quantized)"
+        register_custom_model(str(dest_path), name)
+        
+        tui_text_input(
+            prompt="Press Enter to return to menu...",
+            header=create_header_panel(f"✔ Successfully quantized and registered {name}!", "Success"),
+            footer=footer
+        )
+    except subprocess.CalledProcessError as e:
+        tui_text_input(
+            prompt="Press Enter to return...",
+            header=create_warning_panel(f"Quantization failed with error code {e.returncode}.", "Error"),
+            footer=footer
+        )
+    except Exception as e:
+        tui_text_input(
+            prompt="Press Enter to return...",
+            header=create_warning_panel(f"An unexpected error occurred: {e}", "Error"),
+            footer=footer
+        )
