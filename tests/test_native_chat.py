@@ -341,3 +341,57 @@ def test_run_chat_session_agentic_get_time(mock_tools, mock_save, mock_console_c
     saved_session = mock_save.call_args[0][0]
     assert "the time" in saved_session.messages[-2]["content"]
 
+
+@patch("mlx_lm.load")
+@patch("mlx_man.native_chat_view.Console")
+@patch("mlx_man.native_chat_view.save_session")
+def test_run_chat_session_rag(mock_save, mock_console_cls, mock_load):
+    from mlx_man.native_chat_view import run_chat_session
+    mock_console = MagicMock()
+    mock_console_cls.return_value = mock_console
+    mock_console.input.side_effect = ["what is MLX?", "quit"]
+    
+    mock_model = MagicMock()
+    mock_tokenizer = MagicMock()
+    
+    def mock_stream(*args, **kwargs):
+        yield MockResponseObj("MLX is awesome")
+        
+    mock_mlx = MagicMock()
+    mock_mlx.load.return_value = (mock_model, mock_tokenizer)
+    mock_mlx.stream_generate = mock_stream
+    import sys
+    sys.modules["mlx_lm"] = mock_mlx
+    
+    mock_rag_index = MagicMock()
+    mock_rag_index.search.return_value = ["MLX is a framework for Apple Silicon."]
+    
+    run_chat_session("m", rag_index=mock_rag_index)
+    
+    mock_rag_index.search.assert_called_once_with("what is MLX?", top_k=3)
+    saved_session = mock_save.call_args[0][0]
+    # Check that augmented context was appended
+    assert "Context:\nMLX is a framework" in saved_session.messages[-2]["content"]
+
+@patch("mlx_lm.load")
+@patch("mlx_man.native_chat_view.Console")
+@patch("mlx_man.native_chat_view.save_session")
+def test_run_chat_session_rag_no_chunks(mock_save, mock_console_cls, mock_load):
+    from mlx_man.native_chat_view import run_chat_session
+    mock_console = MagicMock()
+    mock_console_cls.return_value = mock_console
+    mock_console.input.side_effect = ["query", "quit"]
+    
+    mock_mlx = MagicMock()
+    mock_mlx.load.return_value = (MagicMock(), MagicMock())
+    mock_mlx.stream_generate = lambda *a, **k: [MockResponseObj("hi")]
+    import sys
+    sys.modules["mlx_lm"] = mock_mlx
+    
+    mock_rag = MagicMock()
+    mock_rag.search.return_value = [] # no chunks
+    
+    run_chat_session("m", rag_index=mock_rag)
+    
+    saved = mock_save.call_args[0][0]
+    assert saved.messages[-2]["content"] == "query" # not augmented

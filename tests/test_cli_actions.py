@@ -619,3 +619,92 @@ def test_action_run_server_with_lora_cancel(mock_input, mock_home, mock_ram, moc
         with patch("mlx_man.opencode_sync.sync_opencode_config"):
             with patch("mlx_man.usage_tracker.record_usage"):
                 action_run_server()
+
+@patch("mlx_man.cli_actions.tui_select")
+@patch("mlx_man.cli_actions.tui_text_input")
+@patch("mlx_man.model_registry.get_models_by_role")
+def test_action_run_rag_chat_skip(mock_get, mock_text, mock_select):
+    from mlx_man.cli_actions import action_run_rag_chat
+    mock_get.return_value = {"org/model": {"name": "Test"}}
+    mock_select.return_value = "skip"
+    action_run_rag_chat()
+    mock_text.assert_not_called()
+
+@patch("mlx_man.cli_actions.tui_select")
+@patch("mlx_man.cli_actions.tui_text_input")
+@patch("mlx_man.model_registry.get_models_by_role")
+def test_action_run_rag_chat_empty_path(mock_get, mock_text, mock_select):
+    from mlx_man.cli_actions import action_run_rag_chat
+    mock_get.return_value = {"org/model": {"name": "Test"}}
+    mock_select.return_value = "org/model"
+    mock_text.return_value = "   "
+    action_run_rag_chat()
+
+@patch("mlx_man.cli_actions.tui_select")
+@patch("mlx_man.cli_actions.tui_text_input")
+@patch("mlx_man.model_registry.get_models_by_role")
+@patch("builtins.input")
+def test_action_run_rag_chat_invalid_path(mock_input, mock_get, mock_text, mock_select):
+    from mlx_man.cli_actions import action_run_rag_chat
+    mock_get.return_value = {"org/model": {"name": "Test"}}
+    mock_select.return_value = "org/model"
+    mock_text.return_value = "/this/path/does/not/exist/12345"
+    action_run_rag_chat()
+    mock_input.assert_called_once()
+
+@patch("mlx_man.cli_actions.tui_select")
+@patch("mlx_man.cli_actions.tui_text_input")
+@patch("mlx_man.model_registry.get_models_by_role")
+@patch("builtins.input")
+@patch("mlx_man.native_chat_view.run_chat_session")
+def test_action_run_rag_chat_success(mock_run_chat, mock_input, mock_get, mock_text, mock_select, tmp_path):
+    from mlx_man.cli_actions import action_run_rag_chat
+    mock_get.return_value = {"org/model": {"name": "Test"}}
+    mock_select.return_value = "org/model"
+    mock_text.return_value = str(tmp_path)
+    
+    f1 = tmp_path / "test.md"
+    f1.write_text("hello rag")
+    
+    action_run_rag_chat()
+    
+    mock_run_chat.assert_called_once()
+    assert mock_run_chat.call_args[0][0] == "org/model"
+    assert mock_run_chat.call_args[1]["rag_index"] is not None
+
+@patch("mlx_man.cli_actions.tui_select")
+@patch("mlx_man.cli_actions.tui_text_input")
+@patch("mlx_man.model_registry.get_models_by_role")
+@patch("builtins.input")
+def test_action_run_rag_chat_empty_dir(mock_input, mock_get, mock_text, mock_select, tmp_path):
+    from mlx_man.cli_actions import action_run_rag_chat
+    mock_get.return_value = {"org/model": {"name": "Test"}}
+    mock_select.return_value = "org/model"
+    mock_text.return_value = str(tmp_path)
+    
+    action_run_rag_chat()
+    mock_input.assert_called_once()
+
+@patch("mlx_man.cli_actions.tui_select")
+@patch("mlx_man.cli_actions.tui_text_input")
+@patch("mlx_man.model_registry.get_models_by_role")
+@patch("builtins.input")
+@patch("mlx_man.rag_engine.RAGIndex.build_index")
+def test_action_run_rag_chat_exception(mock_build, mock_input, mock_get, mock_text, mock_select, tmp_path):
+    from mlx_man.cli_actions import action_run_rag_chat
+    mock_get.return_value = {"org/model": {"name": "Test"}}
+    mock_select.return_value = "org/model"
+    mock_text.return_value = str(tmp_path)
+    mock_build.side_effect = Exception("failed")
+    
+    action_run_rag_chat()
+    mock_input.assert_called_once()
+
+
+@patch("mlx_man.cli_actions.tui_select")
+@patch("mlx_man.model_registry.get_models_by_role")
+def test_action_run_rag_chat_no_models(mock_get, mock_select):
+    from mlx_man.cli_actions import action_run_rag_chat
+    mock_get.return_value = {}
+    action_run_rag_chat()
+    mock_select.assert_not_called()

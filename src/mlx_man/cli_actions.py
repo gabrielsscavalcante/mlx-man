@@ -529,3 +529,62 @@ def action_run_benchmark(model_id: str):
         json.dump(benchmarks, f, indent=4)
         
     print(f"\n  ✔  Benchmark saved to Leaderboard!")
+
+def action_run_rag_chat():
+    """Runs a RAG-augmented chat session."""
+    from mlx_man.model_registry import get_models_by_role
+    models = get_models_by_role()
+    if not models:
+        return
+        
+    org_model_id = tui_select(
+        "Select a model for RAG Chat (Reasoning/General recommended):",
+        {k: v["name"] for k, v in models.items()}
+    )
+    
+    if org_model_id == "skip":
+        return
+        
+    folder_path = tui_text_input("Enter the absolute path to the folder to index (e.g., /Users/name/Documents): ")
+    if not folder_path.strip():
+        return
+        
+    p = Path(folder_path.strip()).resolve()
+    if not p.exists() or not p.is_dir():
+        from rich.console import Console
+        Console().print(f"[bold red]Error:[/bold red] '{p}' is not a valid directory.")
+        input("Press Enter to return...")
+        return
+        
+    from mlx_man.rag_engine import RAGIndex
+    from rich.progress import Progress, SpinnerColumn, TextColumn
+    
+    rag_index = RAGIndex()
+    
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        transient=True
+    ) as progress:
+        progress.add_task(description=f"Indexing files in {p}...", total=None)
+        try:
+            rag_index.build_index(str(p))
+        except Exception as e:
+            from rich.console import Console
+            Console().print(f"[bold red]Failed to index folder:[/bold red] {e}")
+            input("Press Enter to return...")
+            return
+            
+    if rag_index.total_docs == 0:
+        from rich.console import Console
+        Console().print("[bold yellow]Warning:[/bold yellow] No valid text files (.txt, .md, .py, etc.) found in directory.")
+        input("Press Enter to return...")
+        return
+        
+    from rich.console import Console
+    Console().print(f"[bold green]Success:[/bold green] Indexed {rag_index.total_docs} chunks from {p}.")
+    input("Press Enter to start RAG Chat...")
+    
+    from mlx_man.native_chat_view import run_chat_session
+    run_chat_session(org_model_id, rag_index=rag_index)
+
