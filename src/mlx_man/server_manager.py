@@ -77,3 +77,15 @@ def start_server(model_id, port=8080):
     }
     STATE_FILE.write_text(json.dumps(data))
     return data
+
+
+def check_server_health(state: dict) -> bool:
+    """Check if the server process in the state dictionary is actually running."""
+    if not state or "pid" not in state:
+        return False
+    pid = state["pid"]
+    try:
+        process = psutil.Process(pid)
+        return process.is_running() and process.status() != psutil.STATUS_ZOMBIE
+    except psutil.NoSuchProcess:
+        return False
