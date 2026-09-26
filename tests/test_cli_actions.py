@@ -78,7 +78,8 @@ def test_action_run_server_full_flow_chat(mock_get_models, mock_confirm, mock_se
 @patch("mlx_man.cli_actions.tui_select")
 @patch("mlx_man.cli_actions.tui_confirm")
 @patch("mlx_man.model_registry.get_models_by_role")
-def test_action_run_server_full_flow_server_not_installed(mock_get_models, mock_confirm, mock_select, mock_run, mock_footer, tmp_path):
+@patch("mlx_man.cli_actions.tui_text_input", return_value="8081")
+def test_action_run_server_full_flow_server_not_installed(mock_text, mock_get_models, mock_confirm, mock_select, mock_run, mock_footer, tmp_path):
     mock_get_models.return_value = {
         "org/model": {"name": "Test Model"}
     }
@@ -190,7 +191,9 @@ def test_action_run_server_keyboard_interrupt_chat(mock_get, mock_select, mock_c
 @patch("mlx_man.cli_actions.subprocess.run", side_effect=KeyboardInterrupt)
 @patch("mlx_man.cli_actions.tui_select")
 @patch("mlx_man.model_registry.get_models_by_role")
-def test_action_run_server_keyboard_interrupt_server(mock_get, mock_select, mock_run, mock_footer, tmp_path):
+@patch("mlx_man.cli_actions.tui_text_input", return_value="8080")
+@patch("mlx_man.cli_actions.tui_confirm", return_value=True)
+def test_action_run_server_keyboard_interrupt_server(mock_confirm, mock_text, mock_get, mock_select, mock_run, mock_footer, tmp_path):
     mock_get.return_value = {"org/model": {"name": "M"}}
     mock_select.side_effect = [("skip", ""), ("reasoning", ""), ("org/model", ""), ("server", "")]
     with patch("mlx_man.cli_actions.Path.home", return_value=tmp_path):
@@ -274,27 +277,27 @@ def test_action_sync_models_custom_success(mock_sync, mock_reg, mock_exists, moc
     mock_sync.assert_called_once()
 
 
-@patch("mlx_man.server_manager.get_running_server", return_value=None)
+@patch("mlx_man.server_manager.get_running_servers", return_value={})
 def test_action_manage_server_no_server(mock_get):
     from mlx_man.cli_actions import action_manage_server
     action_manage_server()
 
 @patch("mlx_man.tui_engine.tui_select", return_value=("back", ""))
-@patch("mlx_man.server_manager.get_running_server", return_value={"model_id": "org/model", "port": 8080})
+@patch("mlx_man.server_manager.get_running_servers", return_value={"8080": {"model_id": "org/model", "port": 8080}})
 def test_action_manage_server_back(mock_get, mock_select):
     from mlx_man.cli_actions import action_manage_server
     action_manage_server()
 
-@patch("mlx_man.tui_engine.tui_select", return_value=None)
-@patch("mlx_man.server_manager.get_running_server", return_value={"model_id": "org/model", "port": 8080})
+@patch("mlx_man.tui_engine.tui_select", return_value={})
+@patch("mlx_man.server_manager.get_running_servers", return_value={"8080": {"model_id": "org/model", "port": 8080}})
 def test_action_manage_server_none(mock_get, mock_select):
     from mlx_man.cli_actions import action_manage_server
     action_manage_server()
 
 @patch("mlx_man.server_manager.stop_server")
 @patch("mlx_man.tui_engine.tui_confirm", return_value=True)
-@patch("mlx_man.tui_engine.tui_select", return_value=("stop", ""))
-@patch("mlx_man.server_manager.get_running_server", return_value={"model_id": "org/model", "port": 8080})
+@patch("mlx_man.tui_engine.tui_select", return_value=("stop_8080", ""))
+@patch("mlx_man.server_manager.get_running_servers", return_value={"8080": {"model_id": "org/model", "port": 8080}})
 def test_action_manage_server_stop(mock_get, mock_select, mock_confirm, mock_stop):
     from mlx_man.cli_actions import action_manage_server
     action_manage_server()
@@ -302,8 +305,8 @@ def test_action_manage_server_stop(mock_get, mock_select, mock_confirm, mock_sto
 
 @patch("mlx_man.server_manager.stop_server")
 @patch("mlx_man.tui_engine.tui_confirm", return_value=False)
-@patch("mlx_man.tui_engine.tui_select", return_value=("stop", ""))
-@patch("mlx_man.server_manager.get_running_server", return_value={"model_id": "org/model", "port": 8080})
+@patch("mlx_man.tui_engine.tui_select", return_value=("stop_8080", ""))
+@patch("mlx_man.server_manager.get_running_servers", return_value={"8080": {"model_id": "org/model", "port": 8080}})
 def test_action_manage_server_stop_cancel(mock_get, mock_select, mock_confirm, mock_stop):
     from mlx_man.cli_actions import action_manage_server
     action_manage_server()
@@ -312,7 +315,7 @@ def test_action_manage_server_stop_cancel(mock_get, mock_select, mock_confirm, m
 @patch("mlx_man.cli_actions.subprocess.run")
 @patch("mlx_man.server_manager.LOG_FILE")
 @patch("mlx_man.tui_engine.tui_select", return_value=("logs", ""))
-@patch("mlx_man.server_manager.get_running_server", return_value={"model_id": "org/model", "port": 8080})
+@patch("mlx_man.server_manager.get_running_servers", return_value={"8080": {"model_id": "org/model", "port": 8080}})
 def test_action_manage_server_logs(mock_get, mock_select, mock_log_file, mock_run):
     from mlx_man.cli_actions import action_manage_server
     mock_log_file.exists.return_value = True
@@ -323,9 +326,58 @@ def test_action_manage_server_logs(mock_get, mock_select, mock_log_file, mock_ru
 @patch("mlx_man.cli_actions.subprocess.run")
 @patch("mlx_man.server_manager.LOG_FILE")
 @patch("mlx_man.tui_engine.tui_select", return_value=("logs", ""))
-@patch("mlx_man.server_manager.get_running_server", return_value={"model_id": "org/model", "port": 8080})
+@patch("mlx_man.server_manager.get_running_servers", return_value={"8080": {"model_id": "org/model", "port": 8080}})
 def test_action_manage_server_logs_no_file(mock_get, mock_select, mock_log_file, mock_run):
     from mlx_man.cli_actions import action_manage_server
     mock_log_file.exists.return_value = False
     action_manage_server()
     assert not any("less" in str(c) for c in mock_run.mock_calls)
+
+@patch("mlx_man.cli_dashboard.get_system_status_footer", return_value="footer")
+@patch("mlx_man.cli_actions.tui_select")
+@patch("mlx_man.cli_actions.tui_text_input", return_value="8080")
+@patch("mlx_man.cli_actions.tui_confirm", side_effect=[True, False]) # DL yes, RAM warning no
+@patch("mlx_man.model_registry.get_models_by_role")
+@patch("mlx_man.cli_dashboard.get_free_ram_gb", return_value=8.0)
+def test_action_run_server_ram_warning_cancel(mock_free_ram, mock_get_models, mock_confirm, mock_text, mock_select, mock_footer, tmp_path):
+    mock_get_models.return_value = {"org/model": {"name": "Test", "ram_estimate_gb": "15.0"}}
+    mock_select.side_effect = [("skip", ""), ("reasoning", ""), ("org/model", ""), ("server", "")]
+    with patch("mlx_man.cli_actions.Path.home", return_value=tmp_path):
+        with patch("mlx_man.model_downloader.download_model", return_value=True):
+            with patch("mlx_man.opencode_sync.sync_opencode_config"):
+                from mlx_man.cli_actions import action_run_server
+                action_run_server()
+
+@patch("mlx_man.cli_dashboard.get_system_status_footer", return_value="footer")
+@patch("mlx_man.cli_actions.tui_select")
+@patch("mlx_man.cli_actions.tui_text_input", return_value="8080")
+@patch("mlx_man.cli_actions.tui_confirm", side_effect=[True, True]) # DL yes, RAM warning yes
+@patch("mlx_man.model_registry.get_models_by_role")
+@patch("mlx_man.cli_dashboard.get_free_ram_gb", return_value=8.0)
+def test_action_run_server_ram_warning_proceed(mock_free_ram, mock_get_models, mock_confirm, mock_text, mock_select, mock_footer, tmp_path):
+    mock_get_models.return_value = {"org/model": {"name": "Test", "ram_estimate_gb": ">invalid"}}
+    mock_select.side_effect = [("skip", ""), ("reasoning", ""), ("org/model", ""), ("server", "")]
+    with patch("mlx_man.cli_actions.Path.home", return_value=tmp_path):
+        with patch("mlx_man.model_downloader.download_model", return_value=True):
+            with patch("mlx_man.opencode_sync.sync_opencode_config"):
+                with patch("mlx_man.usage_tracker.record_usage"):
+                    with patch("builtins.input"):
+                        with patch("mlx_man.server_manager.start_server"):
+                            from mlx_man.cli_actions import action_run_server
+                            action_run_server()
+
+@patch("mlx_man.server_manager.stop_server")
+@patch("mlx_man.tui_engine.tui_confirm", return_value=True)
+@patch("mlx_man.tui_engine.tui_select", return_value=("stop_all", ""))
+@patch("mlx_man.server_manager.get_running_servers", return_value={"8080": {"model_id": "a"}, "8081": {"model_id": "b"}})
+def test_action_manage_server_stop_all(mock_get, mock_select, mock_confirm, mock_stop):
+    from mlx_man.cli_actions import action_manage_server
+    action_manage_server()
+
+@patch("mlx_man.server_manager.stop_server")
+@patch("mlx_man.tui_engine.tui_confirm", return_value=True)
+@patch("mlx_man.tui_engine.tui_select", return_value=("stop_8081", ""))
+@patch("mlx_man.server_manager.get_running_servers", return_value={"8080": {"model_id": "a"}, "8081": {"model_id": "b"}})
+def test_action_manage_server_stop_specific(mock_get, mock_select, mock_confirm, mock_stop):
+    from mlx_man.cli_actions import action_manage_server
+    action_manage_server()

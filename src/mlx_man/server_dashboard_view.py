@@ -20,13 +20,7 @@ def tail_logs(n_lines=5):
     except Exception as e:
         return f"[red]Error reading logs: {e}[/red]"
 
-def render_server_dashboard(state, is_healthy):
-    """
-    Renders the beautiful Server Dashboard layout.
-    """
-    from mlx_man.cli_dashboard import get_total_ram_gb, get_free_ram_gb, get_current_gpu_limit
-    
-    # 1. Server Metadata Panel
+def _create_server_panel(port, state, is_healthy):
     if is_healthy:
         status = "[bold green]🟢 RUNNING[/bold green]"
         border = "green"
@@ -35,13 +29,31 @@ def render_server_dashboard(state, is_healthy):
         border = "red"
         
     model = state.get("model_id", "Unknown") if state else "None"
-    port = state.get("port", "8080") if state else "8080"
     pid = state.get("pid", "N/A") if state else "N/A"
     
     metadata = f"Status: {status}\nModel: [bold white]{model}[/bold white]\nPort: {port}\nPID: {pid}"
-    top_panel = Panel(metadata, title="Server Metadata", border_style=border, box=box.ROUNDED)
+    return Panel(metadata, title=f"Server (Port {port})", border_style=border, box=box.ROUNDED)
+
+def render_server_dashboard(servers: dict):
+    """
+    Renders the multi-server Dashboard layout.
+    """
+    from mlx_man.cli_dashboard import get_total_ram_gb, get_free_ram_gb, get_current_gpu_limit
+    from mlx_man.server_manager import check_server_health
     
-    # 2. Hardware Context Panel
+    panels = []
+    for port, state in servers.items():
+        is_healthy = check_server_health(state)
+        panels.append(_create_server_panel(port, state, is_healthy))
+        
+    if not panels:
+        top_panel = _create_server_panel("N/A", None, False)
+    elif len(panels) == 1:
+        top_panel = panels[0]
+    else:
+        top_panel = Columns(panels, expand=True)
+    
+    # Hardware Context Panel
     try:
         total = get_total_ram_gb()
         free = get_free_ram_gb()
@@ -52,13 +64,12 @@ def render_server_dashboard(state, is_healthy):
         gpu_limit = "Unknown"
         
     hardware = f"Total RAM: {total} GB\nUsed RAM:  {used:.1f} GB\nFree RAM:  {free:.1f} GB\nGPU Limit: {gpu_limit}"
-    hw_panel = Panel(hardware, title="Hardware Context", border_style="blue", box=box.ROUNDED, width=40)
+    hw_panel = Panel(hardware, title="Combined Hardware Context", border_style="blue", box=box.ROUNDED, width=40)
     
-    # 3. Recent Logs Panel
+    # Recent Logs Panel
     logs = tail_logs(6)
-    logs_panel = Panel(logs, title="Recent Logs", border_style="bright_black", box=box.ROUNDED, expand=True)
+    logs_panel = Panel(logs, title="Recent Global Logs", border_style="bright_black", box=box.ROUNDED, expand=True)
     
-    # Bottom Row
     bottom_row = Columns([hw_panel, logs_panel], expand=True)
     
     return Group(top_panel, bottom_row)

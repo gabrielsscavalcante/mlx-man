@@ -33,22 +33,34 @@ def test_tail_logs_error(mock_log):
 @patch("mlx_man.cli_dashboard.get_free_ram_gb", return_value=16.0)
 @patch("mlx_man.cli_dashboard.get_current_gpu_limit", return_value="24 GB")
 @patch("mlx_man.server_dashboard_view.tail_logs", return_value="some log")
-def test_render_server_dashboard_healthy(mock_tail, m1, m2, m3):
-    state = {"model_id": "test", "port": 8080, "pid": 1234}
-    grp = render_server_dashboard(state, True)
+@patch("mlx_man.server_manager.check_server_health", return_value=True)
+def test_render_server_dashboard_single(mock_health, mock_tail, m1, m2, m3):
+    state = {"8080": {"model_id": "test", "pid": 1234}}
+    grp = render_server_dashboard(state)
+    assert grp is not None
+
+@patch("mlx_man.cli_dashboard.get_total_ram_gb", return_value=32.0)
+@patch("mlx_man.cli_dashboard.get_free_ram_gb", return_value=16.0)
+@patch("mlx_man.cli_dashboard.get_current_gpu_limit", return_value="24 GB")
+@patch("mlx_man.server_dashboard_view.tail_logs", return_value="some log")
+@patch("mlx_man.server_manager.check_server_health", return_value=True)
+def test_render_server_dashboard_multi(mock_health, mock_tail, m1, m2, m3):
+    state = {"8080": {"model_id": "test", "pid": 1234}, "8081": {"model_id": "test2", "pid": 5678}}
+    grp = render_server_dashboard(state)
     assert grp is not None
 
 @patch("mlx_man.cli_dashboard.get_total_ram_gb", side_effect=Exception("hw error"))
 @patch("mlx_man.server_dashboard_view.tail_logs", return_value="some log")
-def test_render_server_dashboard_hw_error(mock_tail, m1):
-    state = {"model_id": "test", "port": 8080, "pid": 1234}
-    grp = render_server_dashboard(state, False)
+@patch("mlx_man.server_manager.check_server_health", return_value=False)
+def test_render_server_dashboard_hw_error(mock_health, mock_tail, m1):
+    state = {"8080": {"model_id": "test", "pid": 1234}}
+    grp = render_server_dashboard(state)
     assert grp is not None
 
-def test_render_server_dashboard_none_state():
+def test_render_server_dashboard_empty_state():
     with patch("mlx_man.cli_dashboard.get_total_ram_gb", return_value=32.0):
         with patch("mlx_man.cli_dashboard.get_free_ram_gb", return_value=16.0):
             with patch("mlx_man.cli_dashboard.get_current_gpu_limit", return_value="24 GB"):
                 with patch("mlx_man.server_dashboard_view.tail_logs", return_value=""):
-                    grp = render_server_dashboard(None, False)
+                    grp = render_server_dashboard({})
                     assert grp is not None

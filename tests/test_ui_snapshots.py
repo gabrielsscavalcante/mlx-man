@@ -43,7 +43,7 @@ def assert_snapshot(console: Console, base_name: str):
 @patch('mlx_man.cli_dashboard.get_chip_name', return_value="Apple M-Mock")
 @patch('mlx_man.cli_dashboard.get_free_ram_gb', return_value=16.0)
 @patch('mlx_man.cli_dashboard.get_total_ram_gb', return_value=32)
-@patch("mlx_man.server_manager.get_running_server", return_value=None)
+@patch("mlx_man.server_manager.get_running_servers", return_value={})
 @patch('mlx_man.cli_dashboard.get_current_gpu_limit', return_value="24 GB")
 def test_main_menu_snapshot(mock_get, m1, m2, m3, m4, m5):
     from mlx_man.cli_dashboard import get_system_status_footer
@@ -698,7 +698,7 @@ def test_native_chat_snapshot():
     assert_snapshot(console, "native_chat")
 
 
-@patch("mlx_man.server_manager.get_running_server", return_value={"model_id": "Qwen/Qwen2.5-Coder-7B-Instruct-4bit", "port": 8080})
+@patch("mlx_man.server_manager.get_running_servers", return_value={"model_id": "Qwen/Qwen2.5-Coder-7B-Instruct-4bit", "port": 8080})
 @patch("mlx_man.cli_dashboard.get_chip_name", return_value="Apple M-Mock")
 @patch("mlx_man.cli_dashboard.get_free_ram_gb", return_value=16.0)
 @patch("mlx_man.cli_dashboard.get_total_ram_gb", return_value=32)
@@ -756,6 +756,7 @@ def test_main_menu_with_server_snapshot(*args):
 @patch('mlx_man.cli_dashboard.get_free_ram_gb', return_value=16.0)
 @patch('mlx_man.cli_dashboard.get_total_ram_gb', return_value=32)
 @patch('mlx_man.cli_dashboard.get_current_gpu_limit', return_value="24 GB")
+@patch('mlx_man.server_manager.check_server_health', return_value=True)
 @patch('mlx_man.server_dashboard_view.tail_logs', return_value="[INFO] API Started on 8080\n[INFO] Model Qwen-7B loaded")
 def test_server_manage_snapshot(*args):
     from mlx_man.cli_dashboard import get_system_status_footer
@@ -769,7 +770,7 @@ def test_server_manage_snapshot(*args):
     console = Console(width=120, height=35, record=True, force_terminal=True, _environ={})
     
     state = {"model_id": "Qwen/Qwen2.5-Coder-7B-Instruct-4bit", "port": 8080, "pid": 12345}
-    header = render_server_dashboard(state, True)
+    header = render_server_dashboard({"8080": state})
     
     options = [
         ("📄  View Full Server Logs (less)", "logs"),
@@ -807,6 +808,7 @@ def test_server_manage_snapshot(*args):
 @patch('mlx_man.cli_dashboard.get_free_ram_gb', return_value=16.0)
 @patch('mlx_man.cli_dashboard.get_total_ram_gb', return_value=32)
 @patch('mlx_man.cli_dashboard.get_current_gpu_limit', return_value="24 GB")
+@patch('mlx_man.server_manager.check_server_health', return_value=False)
 @patch('mlx_man.server_dashboard_view.tail_logs', return_value="[ERROR] Address already in use\n[FATAL] Failed to bind to 8080")
 def test_server_manage_crashed_snapshot(*args):
     from mlx_man.cli_dashboard import get_system_status_footer
@@ -820,7 +822,7 @@ def test_server_manage_crashed_snapshot(*args):
     console = Console(width=120, height=35, record=True, force_terminal=True, _environ={})
     
     state = {"model_id": "Qwen/Qwen2.5-Coder-7B-Instruct-4bit", "port": 8080, "pid": 12345}
-    header = render_server_dashboard(state, False)
+    header = render_server_dashboard({"8080": state})
     
     options = [
         ("📄  View Full Server Logs (less)", "logs"),
@@ -853,3 +855,62 @@ def test_server_manage_crashed_snapshot(*args):
     console.print(layout)
     from test_ui_snapshots import assert_snapshot
     assert_snapshot(console, "server_manage_menu_crashed")
+@patch('mlx_man.cli_dashboard.get_chip_name', return_value="Apple M-Mock")
+@patch('mlx_man.cli_dashboard.get_free_ram_gb', return_value=16.0)
+@patch('mlx_man.cli_dashboard.get_total_ram_gb', return_value=32)
+@patch('mlx_man.cli_dashboard.get_current_gpu_limit', return_value="24 GB")
+@patch('mlx_man.server_dashboard_view.tail_logs', return_value="[INFO] Dual server layout initialized.")
+@patch('mlx_man.server_manager.check_server_health', return_value=True)
+def test_dual_server_manage_snapshot(*args):
+    from mlx_man.cli_dashboard import get_system_status_footer
+    from mlx_man.server_dashboard_view import render_server_dashboard
+    from mlx_man.tui_engine import build_layout
+    from rich.console import Console
+    
+    console = Console(width=120, height=35, record=True, force_terminal=True, _environ={})
+    
+    state = {
+        "8080": {"model_id": "mock/QwQ-32B", "port": 8080, "pid": 1234},
+        "8081": {"model_id": "mock/Qwen-Coder-7B", "port": 8081, "pid": 5678}
+    }
+    
+    header = render_server_dashboard(state)
+    
+    choices = [
+        ("stop_8080", "🛑  Stop Server on Port 8080"),
+        ("stop_8081", "🛑  Stop Server on Port 8081"),
+        ("stop_all", "🛑  Stop ALL Servers"),
+        ("logs", "📄  View Full Server Logs (less)"),
+        ("back", "⬅️   Back to Menu")
+    ]
+    
+    from rich.panel import Panel
+    from rich.console import Group
+    from rich.text import Text
+    from rich import box
+    
+    menu_lines = []
+    for i, (key, label) in enumerate(choices):
+        if i == 0:
+            t = Text(f" ▸ {label}")
+            t.pad_right(40)
+            t.stylize("bold black on white")
+            menu_lines.append(t)
+        else:
+            menu_lines.append(Text(f"   {label}"))
+            
+    panel = Panel(
+        Group(*menu_lines),
+        title="Server Actions",
+        box=box.ROUNDED,
+        border_style="bright_black",
+        width=46,
+        padding=(1, 1),
+    )
+    
+    body = Group(header, Text(""), panel)
+    layout = build_layout(body, get_system_status_footer(), 120, 35, shortcuts={"↑↓": "navigate", "enter": "select", "esc/q": "back"})
+    console.print(layout)
+    
+    from test_ui_snapshots import assert_snapshot
+    assert_snapshot(console, "dual_server_manage_menu")
