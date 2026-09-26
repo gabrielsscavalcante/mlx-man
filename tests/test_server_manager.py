@@ -96,3 +96,36 @@ def test_start_server(mock_stop, mock_popen, tmp_path):
     
     state_file = tmp_path / "server_state.json"
     assert state_file.exists()
+
+def test_check_server_health_no_state():
+    from mlx_man.server_manager import check_server_health
+    assert not check_server_health(None)
+    assert not check_server_health({})
+
+@patch("mlx_man.server_manager.psutil.Process")
+def test_check_server_health_running(mock_process):
+    from mlx_man.server_manager import check_server_health, psutil
+    mock_instance = mock_process.return_value
+    mock_instance.is_running.return_value = True
+    mock_instance.status.return_value = psutil.STATUS_RUNNING
+    assert check_server_health({"pid": 1234})
+
+@patch("mlx_man.server_manager.psutil.Process")
+def test_check_server_health_zombie(mock_process):
+    from mlx_man.server_manager import check_server_health, psutil
+    mock_instance = mock_process.return_value
+    mock_instance.is_running.return_value = True
+    mock_instance.status.return_value = psutil.STATUS_ZOMBIE
+    assert not check_server_health({"pid": 1234})
+
+@patch("mlx_man.server_manager.psutil.Process")
+def test_check_server_health_not_running(mock_process):
+    from mlx_man.server_manager import check_server_health, psutil
+    mock_instance = mock_process.return_value
+    mock_instance.is_running.return_value = False
+    assert not check_server_health({"pid": 1234})
+
+@patch("mlx_man.server_manager.psutil.Process", side_effect=__import__('psutil').NoSuchProcess(1234))
+def test_check_server_health_no_process(mock_process):
+    from mlx_man.server_manager import check_server_health
+    assert not check_server_health({"pid": 1234})

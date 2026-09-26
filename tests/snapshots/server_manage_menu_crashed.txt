@@ -5,15 +5,15 @@
                                                                                                                         
                                                                                                                         
 ╭────────────────────────────────────────────────── Server Metadata ───────────────────────────────────────────────────╮
-│ Status: 🟢 RUNNING                                                                                                   │
+│ Status: 🔴 STOPPED / CRASHED                                                                                         │
 │ Model: Qwen/Qwen2.5-Coder-7B-Instruct-4bit                                                                           │
 │ Port: 8080                                                                                                           │
 │ PID: 12345                                                                                                           │
 ╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭────────── Hardware Context ──────────╮                             ╭────────────────── Recent Logs ──────────────────╮
-│ Total RAM: 32 GB                     │                             │ [INFO] API Started on 8080                      │
-│ Used RAM:  16.0 GB                   │                             │ [INFO] Model Qwen-7B loaded                     │
-│ Free RAM:  16.0 GB                   │                             ╰─────────────────────────────────────────────────╯
+╭────────── Hardware Context ──────────╮                          ╭─────────────────── Recent Logs ────────────────────╮
+│ Total RAM: 32 GB                     │                          │ [ERROR] Address already in use                     │
+│ Used RAM:  16.0 GB                   │                          │ [FATAL] Failed to bind to 8080                     │
+│ Free RAM:  16.0 GB                   │                          ╰────────────────────────────────────────────────────╯
 │ GPU Limit: 24 GB                     │                                                                                
 ╰──────────────────────────────────────╯                                                                                
                                                                                                                         
