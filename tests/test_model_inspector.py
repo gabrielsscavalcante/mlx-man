@@ -162,14 +162,14 @@ def test_model_action_menu_run(mock_input, mock_run, mock_select, mock_foot, dum
 
 @patch("mlx_man.model_inspector.get_system_status_footer", return_value="footer")
 @patch("mlx_man.model_inspector.tui_select")
-@patch("mlx_man.model_inspector.subprocess.run")
+@patch("mlx_man.server_manager.start_server")
 @patch("builtins.input", return_value="")
-def test_model_action_menu_serve(mock_input, mock_run, mock_select, mock_foot, dummy_meta):
+def test_model_action_menu_serve(mock_input, mock_start, mock_select, mock_foot, dummy_meta):
     mock_select.side_effect = ["serve", None]
     with patch("mlx_man.usage_tracker.record_usage"):
         with patch("mlx_man.opencode_sync.sync_opencode_config"):
             _model_action_menu(dummy_meta)
-    mock_run.assert_called_once()
+    mock_start.assert_called_once_with('org/model')
 
 @patch("mlx_man.model_inspector.get_system_status_footer", return_value="footer")
 @patch("mlx_man.model_inspector.tui_select")

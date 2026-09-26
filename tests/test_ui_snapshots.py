@@ -8,7 +8,7 @@ from rich.table import Table
 
 from mlx_man.tui_engine import build_layout
 from mlx_man.cli_dashboard import get_banner, get_tip_line
-from mlx_man.main import MENU_ITEMS
+from mlx_man.main import get_menu_items
 from mlx_man.ram_manager_view import get_header_group, get_process_row
 from mlx_man.process_service import ProcessInfo
 
@@ -43,11 +43,12 @@ def assert_snapshot(console: Console, base_name: str):
 @patch('mlx_man.cli_dashboard.get_chip_name', return_value="Apple M-Mock")
 @patch('mlx_man.cli_dashboard.get_free_ram_gb', return_value=16.0)
 @patch('mlx_man.cli_dashboard.get_total_ram_gb', return_value=32)
+@patch("mlx_man.server_manager.get_running_server", return_value=None)
 @patch('mlx_man.cli_dashboard.get_current_gpu_limit', return_value="24 GB")
-def test_main_menu_snapshot(m1, m2, m3, m4, m5):
+def test_main_menu_snapshot(mock_get, m1, m2, m3, m4, m5):
     from mlx_man.cli_dashboard import get_system_status_footer
     
-    console = Console(width=100, height=30, record=True, force_terminal=True)
+    console = Console(width=100, height=30, record=True, force_terminal=True, _environ={})
     
     below_panel = Group(
         get_tip_line(),
@@ -55,10 +56,10 @@ def test_main_menu_snapshot(m1, m2, m3, m4, m5):
     
     inner_width = 50
     menu_lines = []
-    selectable = [i for i, item in enumerate(MENU_ITEMS) if item is not None]
+    selectable = [i for i, item in enumerate(get_menu_items()) if item is not None]
     idx = 0
     
-    for i, item in enumerate(MENU_ITEMS):
+    for i, item in enumerate(get_menu_items()):
         if item is None:
             sep = "─" * max(1, inner_width - 2)
             menu_lines.append(Text(f"  {sep}", style="bright_black"))
@@ -89,7 +90,7 @@ def test_main_menu_snapshot(m1, m2, m3, m4, m5):
 @patch('mlx_man.cli_dashboard.get_current_gpu_limit', return_value="24 GB")
 def test_ram_manager_snapshot(m1, m2, m3, m4):
     from mlx_man.cli_dashboard import get_system_status_footer
-    console = Console(width=120, height=30, record=True, force_terminal=True)
+    console = Console(width=120, height=30, record=True, force_terminal=True, _environ={})
     
     mem_info = {"used_gb": 24.0, "total_gb": 32.0, "wired_gb": 4.0}
     reclaimable_mb = 2048.0
@@ -161,7 +162,7 @@ def test_ram_manager_snapshot(m1, m2, m3, m4):
 def test_model_inspector_snapshot(m1, m2, m3, m4, m5, m6):
     from mlx_man.cli_dashboard import get_system_status_footer
     from mlx_man.model_inspector import render_model_manager, ModelMetadata
-    console = Console(width=120, height=35, record=True, force_terminal=True)
+    console = Console(width=120, height=35, record=True, force_terminal=True, _environ={})
     
     models = [
         ModelMetadata(
@@ -275,7 +276,7 @@ def test_insights_snapshot(m1, m2, m3, m4):
     from mlx_man.cli_dashboard import get_system_status_footer
     from mlx_man.insights_view import get_insights_view, ModelInfo, get_category_color
     import datetime
-    console = Console(width=120, height=45, record=True, force_terminal=True)
+    console = Console(width=120, height=45, record=True, force_terminal=True, _environ={})
     
     models = [
         ModelInfo(
@@ -382,7 +383,7 @@ def test_download_model_snapshot(m1, m2, m3, m4):
     from rich.panel import Panel
     from rich import box
     
-    console = Console(width=120, height=30, record=True, force_terminal=True)
+    console = Console(width=120, height=30, record=True, force_terminal=True, _environ={})
     
     prompt_text = Text("Enter a HuggingFace model ID (e.g., mlx-community/Qwen3.6-27B-4bit)", style="dim")
     panel_header = create_header_panel(prompt_text, "Download New Model")
@@ -422,7 +423,7 @@ def test_model_action_menu_snapshot(m1, m2, m3, m4):
     from rich.panel import Panel
     from rich import box
     
-    console = Console(width=120, height=35, record=True, force_terminal=True)
+    console = Console(width=120, height=35, record=True, force_terminal=True, _environ={})
     
     details = Text()
     details.append("Model ID: ", style="bold white")
@@ -482,7 +483,7 @@ def test_model_delete_confirm_snapshot(m1, m2, m3, m4):
     from rich.panel import Panel
     from rich import box
     
-    console = Console(width=120, height=30, record=True, force_terminal=True)
+    console = Console(width=120, height=30, record=True, force_terminal=True, _environ={})
     
     details = Text()
     details.append("Model ID: ", style="bold white")
@@ -524,7 +525,7 @@ def test_sync_models_snapshot(m1, m2, m3, m4):
     from rich.panel import Panel
     from rich import box
     
-    console = Console(width=120, height=35, record=True, force_terminal=True)
+    console = Console(width=120, height=35, record=True, force_terminal=True, _environ={})
     
     header = get_banner()
     
@@ -573,7 +574,7 @@ def test_search_hub_results_snapshot(m1, m2, m3, m4):
     from rich.panel import Panel
     from rich import box
     
-    console = Console(width=120, height=35, record=True, force_terminal=True)
+    console = Console(width=120, height=35, record=True, force_terminal=True, _environ={})
     
     header = create_header_panel(Text("Found 2 matching MLX models.", style="green"), "Hub Search Results")
     
@@ -631,7 +632,7 @@ def test_chat_history_snapshot(m1, m2, m3, m4):
     from rich.panel import Panel
     from rich import box
     
-    console = Console(width=120, height=35, record=True, force_terminal=True)
+    console = Console(width=120, height=35, record=True, force_terminal=True, _environ={})
     
     header = create_header_panel(Text("2 Past Sessions", style="green"), "Chat History")
     
@@ -682,7 +683,7 @@ def test_native_chat_snapshot():
     from rich.text import Text
     from rich.markdown import Markdown
     
-    console = Console(width=100, record=True, force_terminal=True)
+    console = Console(width=100, record=True, force_terminal=True, _environ={})
     
     console.print(Panel("Started Chat: [bold cyan]Qwen2.5-7B-Instruct[/bold cyan]\n[dim]Type your message below. Type 'quit' or 'exit' to end.[/dim]", title="MLX Native Chat", border_style="green"))
     console.print()

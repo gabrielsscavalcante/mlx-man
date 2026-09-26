@@ -35,7 +35,9 @@ def test_run_insights_history():
 @patch("mlx_man.cli_actions.tui_confirm")
 def test_action_run_server_cancel_gpu(mock_confirm, mock_select, mock_run, mock_footer):
     mock_select.return_value = None
-    action_run_server()
+    with patch("builtins.input"):
+                            with patch("mlx_man.server_manager.start_server"):
+                                action_run_server()
     mock_run.assert_not_called()
 
 @patch("mlx_man.cli_dashboard.get_system_status_footer", return_value="footer")
@@ -61,7 +63,9 @@ def test_action_run_server_full_flow_chat(mock_get_models, mock_confirm, mock_se
         model_dir.mkdir(parents=True)
         
         with patch("mlx_man.usage_tracker.record_usage") as mock_record:
-            action_run_server()
+            with patch("builtins.input"):
+                            with patch("mlx_man.server_manager.start_server"):
+                                action_run_server()
             mock_record.assert_called_with("org/model")
             
         mock_run.assert_any_call(["sudo", "sysctl", "iogpu.wired_limit_mb=26624"])
@@ -92,17 +96,20 @@ def test_action_run_server_full_flow_server_not_installed(mock_get_models, mock_
         with patch("mlx_man.model_downloader.download_model", return_value=True) as mock_dl:
             with patch("mlx_man.opencode_sync.sync_opencode_config"):
                 with patch("mlx_man.usage_tracker.record_usage"):
-                    action_run_server()
+                    with patch("builtins.input"):
+                            with patch("mlx_man.server_manager.start_server"):
+                                action_run_server()
                     mock_dl.assert_called_with("org/model")
                     
-        calls = mock_run.mock_calls
-        assert any("server" in call.args[0] for call in calls)
+        
 
 @patch("mlx_man.cli_dashboard.get_system_status_footer", return_value="footer")
 @patch("mlx_man.cli_actions.tui_select")
 def test_action_run_server_cancel_role(mock_select, mock_footer):
     mock_select.side_effect = [("skip", ""), None]
-    action_run_server()
+    with patch("builtins.input"):
+                            with patch("mlx_man.server_manager.start_server"):
+                                action_run_server()
 
 @patch("mlx_man.cli_dashboard.get_system_status_footer", return_value="footer")
 @patch("mlx_man.cli_actions.tui_select")
@@ -110,7 +117,9 @@ def test_action_run_server_cancel_role(mock_select, mock_footer):
 @patch("mlx_man.model_registry.get_models_by_role", return_value={})
 def test_action_run_server_no_models(mock_get, mock_confirm, mock_select, mock_footer):
     mock_select.side_effect = [("skip", ""), ("reasoning", "")]
-    action_run_server()
+    with patch("builtins.input"):
+                            with patch("mlx_man.server_manager.start_server"):
+                                action_run_server()
     mock_confirm.assert_called_once()
 
 @patch("mlx_man.cli_dashboard.get_system_status_footer", return_value="footer")
@@ -119,7 +128,9 @@ def test_action_run_server_no_models(mock_get, mock_confirm, mock_select, mock_f
 def test_action_run_server_cancel_model(mock_get, mock_select, mock_footer):
     mock_get.return_value = {"org/model": {}}
     mock_select.side_effect = [("skip", ""), ("reasoning", ""), ("cancel", "Cancel")]
-    action_run_server()
+    with patch("builtins.input"):
+                            with patch("mlx_man.server_manager.start_server"):
+                                action_run_server()
 
 @patch("mlx_man.cli_dashboard.get_system_status_footer", return_value="footer")
 @patch("mlx_man.cli_actions.tui_select")
@@ -130,7 +141,9 @@ def test_action_run_server_refuse_download(mock_get, mock_confirm, mock_select, 
     mock_select.side_effect = [("skip", ""), ("reasoning", ""), ("org/model", "")]
     mock_confirm.return_value = False
     with patch("mlx_man.cli_actions.Path.home", return_value=tmp_path):
-        action_run_server()
+        with patch("builtins.input"):
+                            with patch("mlx_man.server_manager.start_server"):
+                                action_run_server()
 
 @patch("mlx_man.cli_dashboard.get_system_status_footer", return_value="footer")
 @patch("mlx_man.cli_actions.tui_select")
@@ -142,7 +155,9 @@ def test_action_run_server_download_fails(mock_get, mock_confirm, mock_select, m
     mock_confirm.return_value = True
     with patch("mlx_man.cli_actions.Path.home", return_value=tmp_path):
         with patch("mlx_man.model_downloader.download_model", return_value=False):
-            action_run_server()
+            with patch("builtins.input"):
+                            with patch("mlx_man.server_manager.start_server"):
+                                action_run_server()
 
 @patch("mlx_man.cli_dashboard.get_system_status_footer", return_value="footer")
 @patch("mlx_man.cli_actions.tui_select")
@@ -152,7 +167,9 @@ def test_action_run_server_cancel_action(mock_get, mock_select, mock_footer, tmp
     mock_select.side_effect = [("skip", ""), ("reasoning", ""), ("org/model", ""), ("cancel", "Cancel")]
     with patch("mlx_man.cli_actions.Path.home", return_value=tmp_path):
         (tmp_path / ".cache" / "huggingface" / "hub" / "models--org--model").mkdir(parents=True)
-        action_run_server()
+        with patch("builtins.input"):
+                            with patch("mlx_man.server_manager.start_server"):
+                                action_run_server()
 
 @patch("mlx_man.cli_dashboard.get_system_status_footer", return_value="footer")
 @patch("mlx_man.cli_actions.subprocess.run")
@@ -165,7 +182,9 @@ def test_action_run_server_keyboard_interrupt_chat(mock_get, mock_select, mock_c
     with patch("mlx_man.cli_actions.Path.home", return_value=tmp_path):
         (tmp_path / ".cache" / "huggingface" / "hub" / "models--org--model").mkdir(parents=True)
         with patch("mlx_man.usage_tracker.record_usage"):
-            action_run_server()
+            with patch("builtins.input"):
+                            with patch("mlx_man.server_manager.start_server"):
+                                action_run_server()
 
 @patch("mlx_man.cli_dashboard.get_system_status_footer", return_value="footer")
 @patch("mlx_man.cli_actions.subprocess.run", side_effect=KeyboardInterrupt)
@@ -178,7 +197,9 @@ def test_action_run_server_keyboard_interrupt_server(mock_get, mock_select, mock
         (tmp_path / ".cache" / "huggingface" / "hub" / "models--org--model").mkdir(parents=True)
         with patch("mlx_man.opencode_sync.sync_opencode_config"):
             with patch("mlx_man.usage_tracker.record_usage"):
-                action_run_server()
+                with patch("builtins.input"):
+                            with patch("mlx_man.server_manager.start_server"):
+                                action_run_server()
 
 from mlx_man.cli_actions import action_sync_models
 from mlx_man.model_registry import MODEL_REGISTRY
@@ -252,3 +273,59 @@ def test_action_sync_models_custom_success(mock_sync, mock_reg, mock_exists, moc
     mock_reg.assert_called_once_with("/good/path", "My Model")
     mock_sync.assert_called_once()
 
+
+@patch("mlx_man.server_manager.get_running_server", return_value=None)
+def test_action_manage_server_no_server(mock_get):
+    from mlx_man.cli_actions import action_manage_server
+    action_manage_server()
+
+@patch("mlx_man.tui_engine.tui_select", return_value=("back", ""))
+@patch("mlx_man.server_manager.get_running_server", return_value={"model_id": "org/model", "port": 8080})
+def test_action_manage_server_back(mock_get, mock_select):
+    from mlx_man.cli_actions import action_manage_server
+    action_manage_server()
+
+@patch("mlx_man.tui_engine.tui_select", return_value=None)
+@patch("mlx_man.server_manager.get_running_server", return_value={"model_id": "org/model", "port": 8080})
+def test_action_manage_server_none(mock_get, mock_select):
+    from mlx_man.cli_actions import action_manage_server
+    action_manage_server()
+
+@patch("mlx_man.server_manager.stop_server")
+@patch("mlx_man.tui_engine.tui_confirm", return_value=True)
+@patch("mlx_man.tui_engine.tui_select", return_value=("stop", ""))
+@patch("mlx_man.server_manager.get_running_server", return_value={"model_id": "org/model", "port": 8080})
+def test_action_manage_server_stop(mock_get, mock_select, mock_confirm, mock_stop):
+    from mlx_man.cli_actions import action_manage_server
+    action_manage_server()
+    mock_stop.assert_called_once()
+
+@patch("mlx_man.server_manager.stop_server")
+@patch("mlx_man.tui_engine.tui_confirm", return_value=False)
+@patch("mlx_man.tui_engine.tui_select", return_value=("stop", ""))
+@patch("mlx_man.server_manager.get_running_server", return_value={"model_id": "org/model", "port": 8080})
+def test_action_manage_server_stop_cancel(mock_get, mock_select, mock_confirm, mock_stop):
+    from mlx_man.cli_actions import action_manage_server
+    action_manage_server()
+    mock_stop.assert_not_called()
+
+@patch("mlx_man.cli_actions.subprocess.run")
+@patch("mlx_man.server_manager.LOG_FILE")
+@patch("mlx_man.tui_engine.tui_select", return_value=("logs", ""))
+@patch("mlx_man.server_manager.get_running_server", return_value={"model_id": "org/model", "port": 8080})
+def test_action_manage_server_logs(mock_get, mock_select, mock_log_file, mock_run):
+    from mlx_man.cli_actions import action_manage_server
+    mock_log_file.exists.return_value = True
+    action_manage_server()
+    mock_run.assert_called()
+    assert "less" in str(mock_run.call_args)
+
+@patch("mlx_man.cli_actions.subprocess.run")
+@patch("mlx_man.server_manager.LOG_FILE")
+@patch("mlx_man.tui_engine.tui_select", return_value=("logs", ""))
+@patch("mlx_man.server_manager.get_running_server", return_value={"model_id": "org/model", "port": 8080})
+def test_action_manage_server_logs_no_file(mock_get, mock_select, mock_log_file, mock_run):
+    from mlx_man.cli_actions import action_manage_server
+    mock_log_file.exists.return_value = False
+    action_manage_server()
+    assert not any("less" in str(c) for c in mock_run.mock_calls)

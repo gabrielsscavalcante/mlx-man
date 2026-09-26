@@ -17,12 +17,12 @@
        │    📊  Insights & History                          │                                       
        │    💬  Chat History                                │                                       
        │    🔄  Sync Models                                 │                                       
-       │    🔍  Search Hub                                  │                                       
        │   ──────────────────────────────────────────────── │                                       
        │    ⏻   Exit                                        │                                       
        ╰────────────────────────────────────────────────────╯                                       
                                                                                                     
        ● Tip  Connect external coding tools or agents to MLX-Man's local server on port 8080        
+                                                                                                    
                                                                                                     
                                                                                                     
                                                                                                     

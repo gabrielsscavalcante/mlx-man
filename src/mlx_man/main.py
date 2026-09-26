@@ -25,23 +25,31 @@ from mlx_man.cli_actions import (
     run_model_inspector,
     run_insights_history,
     action_sync_models,
+    action_manage_server,
 )
 
 
-# ─────────────────────────────────────────────────────────────────────────────
-# Menu items:  (display_label, return_value)  or  None = separator
-# ─────────────────────────────────────────────────────────────────────────────
-MENU_ITEMS = [
-    ("🚀  Run LLM Server",      "run"),
-    ("🧹  Clean Up RAM",         "clean"),
-    ("📦  Manage Models",        "manage"),
-    ("📊  Insights & History",   "insights"),
-    ("💬  Chat History",         "history"),
-    ("🔄  Sync Models",          "sync"),
-    ("🔍  Search Hub",           "search"),
-    None,                        # visual separator
-    ("⏻   Exit",                 "exit"),
-]
+def get_menu_items():
+    from mlx_man.server_manager import get_running_server
+    items = [
+        ("🚀  Run LLM Server",      "run"),
+    ]
+    
+    server = get_running_server()
+    if server:
+        model_short = server["model_id"].split("/")[-1]
+        items.append((f"🟢  Active Server: {model_short}", "server_manage"))
+        
+    items.extend([
+        ("🧹  Clean Up RAM",         "clean"),
+        ("📦  Manage Models",        "manage"),
+        ("📊  Insights & History",   "insights"),
+        ("💬  Chat History",         "history"),
+        ("🔄  Sync Models",          "sync"),
+        None,                        # visual separator
+        ("⏻   Exit",                 "exit"),
+    ])
+    return items
 
 
 from mlx_man.tui_engine import main_menu_select
@@ -57,7 +65,7 @@ def main():
             )
 
             choice = main_menu_select(
-                items=MENU_ITEMS,
+                items=get_menu_items(),
                 header=get_banner(),
                 below_panel=below_panel,
                 footer=get_system_status_footer(),
@@ -69,6 +77,8 @@ def main():
 
             if choice == "run":
                 action_run_server()
+            elif choice == "server_manage":
+                action_manage_server()
             elif choice == "clean":
                 run_memory_cleaner()
             elif choice == "manage":
