@@ -47,6 +47,7 @@ def test_action_run_server_cancel_gpu(mock_confirm, mock_select, mock_run, mock_
 @patch("mlx_man.cli_actions.tui_confirm")
 @patch("mlx_man.model_registry.get_models_by_role")
 def test_action_run_server_full_flow_chat(mock_get_models, mock_confirm, mock_select, mock_run, mock_chat, mock_footer, tmp_path):
+    mock_confirm.return_value = False
     mock_get_models.return_value = {
         "org/model": {"name": "Test Model", "ram_estimate_gb": 10, "best_for": ["Chat"]}
     }
@@ -176,8 +177,10 @@ def test_action_run_server_cancel_action(mock_get, mock_select, mock_footer, tmp
 @patch("mlx_man.cli_actions.subprocess.run")
 @patch("mlx_man.native_chat_view.run_chat_session", side_effect=KeyboardInterrupt)
 @patch("mlx_man.cli_actions.tui_select")
+@patch("mlx_man.cli_actions.tui_confirm")
 @patch("mlx_man.model_registry.get_models_by_role")
-def test_action_run_server_keyboard_interrupt_chat(mock_get, mock_select, mock_chat, mock_run, mock_footer, tmp_path):
+def test_action_run_server_keyboard_interrupt_chat(mock_get, mock_confirm, mock_select, mock_chat, mock_run, mock_footer, tmp_path):
+    mock_confirm.return_value = False
     mock_get.return_value = {"org/model": {"name": "M"}}
     mock_select.side_effect = [("skip", ""), ("reasoning", ""), ("org/model", ""), ("chat", "")]
     with patch("mlx_man.cli_actions.Path.home", return_value=tmp_path):
@@ -192,7 +195,7 @@ def test_action_run_server_keyboard_interrupt_chat(mock_get, mock_select, mock_c
 @patch("mlx_man.cli_actions.tui_select")
 @patch("mlx_man.model_registry.get_models_by_role")
 @patch("mlx_man.cli_actions.tui_text_input", return_value="8080")
-@patch("mlx_man.cli_actions.tui_confirm", return_value=True)
+@patch("mlx_man.cli_actions.tui_confirm", side_effect=[True, False, True, True])
 def test_action_run_server_keyboard_interrupt_server(mock_confirm, mock_text, mock_get, mock_select, mock_run, mock_footer, tmp_path):
     mock_get.return_value = {"org/model": {"name": "M"}}
     mock_select.side_effect = [("skip", ""), ("reasoning", ""), ("org/model", ""), ("server", "")]
@@ -336,7 +339,7 @@ def test_action_manage_server_logs_no_file(mock_get, mock_select, mock_log_file,
 @patch("mlx_man.cli_dashboard.get_system_status_footer", return_value="footer")
 @patch("mlx_man.cli_actions.tui_select")
 @patch("mlx_man.cli_actions.tui_text_input", return_value="8080")
-@patch("mlx_man.cli_actions.tui_confirm", side_effect=[True, False]) # DL yes, RAM warning no
+@patch("mlx_man.cli_actions.tui_confirm", side_effect=[True, False, False]) # DL yes, LoRA no, RAM warning no
 @patch("mlx_man.model_registry.get_models_by_role")
 @patch("mlx_man.cli_dashboard.get_free_ram_gb", return_value=8.0)
 def test_action_run_server_ram_warning_cancel(mock_free_ram, mock_get_models, mock_confirm, mock_text, mock_select, mock_footer, tmp_path):
@@ -571,3 +574,48 @@ def test_action_run_benchmark_exceptions(mock_home, mock_sub_run, mock_stream, m
     
     action_run_benchmark("org/model")
 
+
+@patch("mlx_man.cli_actions.tui_select")
+@patch("mlx_man.cli_actions.tui_text_input")
+@patch("mlx_man.cli_actions.tui_confirm")
+@patch("mlx_man.model_registry.get_models_by_role")
+@patch("mlx_man.cli_dashboard.get_free_ram_gb", return_value=32.0)
+@patch("mlx_man.cli_actions.Path.home")
+@patch("builtins.input")
+@patch("mlx_man.server_manager.start_server")
+def test_action_run_server_with_lora(mock_start, mock_input, mock_home, mock_ram, mock_get_models, mock_confirm, mock_text, mock_select, tmp_path):
+    from mlx_man.cli_actions import action_run_server
+    mock_get_models.return_value = {"org/model": {"name": "Test", "ram_estimate_gb": 8.0}}
+    mock_select.side_effect = [("skip", ""), ("reasoning", ""), ("org/model", ""), ("server", "")]
+    
+    # tui_confirm side_effect: True for LoRA, True for proceeding if needed (but RAM is enough)
+    mock_confirm.side_effect = [True, True, True]
+    mock_text.side_effect = ["my-lora-adapter", "8080"]
+    mock_home.return_value = tmp_path
+    
+    with patch("mlx_man.model_downloader.download_model", return_value=True):
+        with patch("mlx_man.opencode_sync.sync_opencode_config"):
+            with patch("mlx_man.usage_tracker.record_usage"):
+                action_run_server()
+                mock_start.assert_called_once_with("org/model", 8080, "my-lora-adapter")
+
+@patch("mlx_man.cli_actions.tui_select")
+@patch("mlx_man.cli_actions.tui_text_input")
+@patch("mlx_man.cli_actions.tui_confirm")
+@patch("mlx_man.model_registry.get_models_by_role")
+@patch("mlx_man.cli_dashboard.get_free_ram_gb", return_value=32.0)
+@patch("mlx_man.cli_actions.Path.home")
+@patch("builtins.input")
+def test_action_run_server_with_lora_cancel(mock_input, mock_home, mock_ram, mock_get_models, mock_confirm, mock_text, mock_select, tmp_path):
+    from mlx_man.cli_actions import action_run_server
+    mock_get_models.return_value = {"org/model": {"name": "Test", "ram_estimate_gb": 8.0}}
+    mock_select.side_effect = [("skip", ""), ("reasoning", ""), ("org/model", ""), ("server", "")]
+    
+    mock_confirm.side_effect = [True, True, True]
+    mock_text.side_effect = [""]
+    mock_home.return_value = tmp_path
+    
+    with patch("mlx_man.model_downloader.download_model", return_value=True):
+        with patch("mlx_man.opencode_sync.sync_opencode_config"):
+            with patch("mlx_man.usage_tracker.record_usage"):
+                action_run_server()

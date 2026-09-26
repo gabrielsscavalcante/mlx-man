@@ -170,3 +170,39 @@ def test_get_running_servers_partial_dead(mock_process, mock_health, tmp_path):
     res = get_running_servers()
     assert "8081" in res
     assert "8080" not in res
+
+@patch("mlx_man.server_manager.subprocess.Popen")
+@patch("mlx_man.server_manager.stop_server")
+def test_start_server_with_adapter(mock_stop, mock_popen, tmp_path):
+    from mlx_man.server_manager import start_server
+    mock_proc = MagicMock()
+    mock_proc.pid = 1234
+    mock_popen.return_value = mock_proc
+    
+    with patch("mlx_man.server_manager.CONFIG_DIR", tmp_path):
+        with patch("mlx_man.server_manager.LOG_FILE", tmp_path / "server.log"):
+            with patch("mlx_man.server_manager.STATE_FILE", tmp_path / "server_state.json"):
+                data = start_server("my_model", 8080, "my_adapter")
+                
+                assert data["adapter_path"] == "my_adapter"
+                cmd = mock_popen.call_args[0][0]
+                assert "--adapter-path" in cmd
+                assert "my_adapter" in cmd
+
+@patch("mlx_man.server_manager.subprocess.Popen")
+@patch("mlx_man.server_manager.stop_server")
+def test_start_server_with_adapter(mock_stop, mock_popen, tmp_path):
+    from mlx_man.server_manager import start_server
+    mock_proc = MagicMock()
+    mock_proc.pid = 1234
+    mock_popen.return_value = mock_proc
+    
+    with patch("mlx_man.server_manager.CONFIG_DIR", tmp_path):
+        with patch("mlx_man.server_manager.LOG_FILE", tmp_path / "server.log"):
+            with patch("mlx_man.server_manager.STATE_FILE", tmp_path / "server_state.json"):
+                data = start_server("my_model", 8080, "my_adapter")
+                
+                assert data["adapter_path"] == "my_adapter"
+                cmd = mock_popen.call_args[0][0]
+                assert "--adapter-path" in cmd
+                assert "my_adapter" in cmd

@@ -73,7 +73,7 @@ def stop_server(port=None):
     else:
         STATE_FILE.write_text(json.dumps(servers))
 
-def start_server(model_id, port=8080):
+def start_server(model_id, port=8080, adapter_path=None):
     """Starts a new server as a detached background daemon on the specified port."""
     # Stop existing server on this port if any
     stop_server(port)
@@ -85,8 +85,12 @@ def start_server(model_id, port=8080):
     
     log_fd = open(LOG_FILE, "a")
     
+    cmd = [sys.executable, "-m", "mlx_lm.server", "--model", model_id, "--port", str(port)]
+    if adapter_path:
+        cmd.extend(["--adapter-path", adapter_path])
+        
     proc = subprocess.Popen(
-        [sys.executable, "-m", "mlx_lm.server", "--model", model_id, "--port", str(port)],
+        cmd,
         stdout=log_fd,
         stderr=subprocess.STDOUT,
         start_new_session=True
@@ -98,6 +102,7 @@ def start_server(model_id, port=8080):
         "pid": proc.pid,
         "model_id": model_id,
         "port": port,
+        "adapter_path": adapter_path,
         "start_time": time.time()
     }
     

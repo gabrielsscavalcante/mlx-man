@@ -8,7 +8,7 @@ from rich.text import Text
 
 from mlx_man.chat_manager import ChatSession, save_session, load_session
 
-def run_chat_session(model_id: str, resume_session_id: Optional[str] = None):
+def run_chat_session(model_id: str, resume_session_id: Optional[str] = None, adapter_path: Optional[str] = None):
     try:
         import mlx_lm
     except ImportError:
@@ -17,10 +17,17 @@ def run_chat_session(model_id: str, resume_session_id: Optional[str] = None):
 
     console = Console()
     console.clear()
-    console.print(Panel(f"Loading [bold cyan]{model_id}[/bold cyan] into memory...", title="MLX Native Chat", border_style="blue"))
+    
+    if adapter_path:
+        console.print(Panel(f"Loading [bold cyan]{model_id}[/bold cyan] with adapter [bold magenta]{adapter_path}[/bold magenta]...", title="MLX Native Chat", border_style="blue"))
+    else:
+        console.print(Panel(f"Loading [bold cyan]{model_id}[/bold cyan] into memory...", title="MLX Native Chat", border_style="blue"))
     
     try:
-        model, tokenizer = mlx_lm.load(model_id)
+        if adapter_path:
+            model, tokenizer = mlx_lm.load(model_id, adapter_path=adapter_path)
+        else:
+            model, tokenizer = mlx_lm.load(model_id)
     except Exception as e:
         console.print(f"[bold red]Failed to load model:[/bold red] {e}")
         input("Press Enter to return...")
