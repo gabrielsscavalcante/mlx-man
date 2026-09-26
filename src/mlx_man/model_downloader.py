@@ -44,6 +44,15 @@ def download_model(model_id_or_url: str) -> bool:
         snapshot_download(
             repo_id=model_id,
             resume_download=True,
+            allow_patterns=[
+                "*.safetensors",
+                "*.safetensors.index.json",
+                "*.json",
+                "*.model",
+                "*.tiktoken",
+                "*.txt",
+                "*.md"
+            ]
         )
         print(f"\n✔ Successfully downloaded '{model_id}'!")
         return True

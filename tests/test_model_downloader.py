@@ -14,7 +14,7 @@ def test_download_model_invalid_id():
 def test_download_model_url():
     with patch("huggingface_hub.snapshot_download") as mock_dl:
         assert download_model("https://huggingface.co/org/model") is True
-        mock_dl.assert_called_once_with(repo_id="org/model", resume_download=True)
+        mock_dl.assert_called_once_with(repo_id="org/model", resume_download=True, allow_patterns=["*.safetensors", "*.safetensors.index.json", "*.json", "*.model", "*.tiktoken", "*.txt", "*.md"])
 
 def test_download_model_keyboard_interrupt():
     with patch("huggingface_hub.snapshot_download", side_effect=KeyboardInterrupt):
