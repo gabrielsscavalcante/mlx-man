@@ -10,8 +10,8 @@ permissions:
 
 jobs:
   validate-and-build:
-    name: Validate, Test, and Build Release Artifacts
-    runs-on: ubuntu-latest
+    name: Validate, Test, and Build Release Artifacts (macOS)
+    runs-on: macos-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
