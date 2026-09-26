@@ -275,8 +275,8 @@ def action_sync_models():
 
 
 def action_manage_server():
-    from mlx_man.server_manager import get_running_server, stop_server, LOG_FILE
-    from mlx_man.ui_components import create_header_panel
+    from mlx_man.server_manager import get_running_server, stop_server, LOG_FILE, check_server_health
+    from mlx_man.server_dashboard_view import render_server_dashboard
     from mlx_man.cli_dashboard import get_system_status_footer
     from mlx_man.tui_engine import tui_select, tui_confirm
     import subprocess
@@ -287,19 +287,17 @@ def action_manage_server():
     if not server:
         return
         
-    model_name = server["model_id"].split("/")[-1]
-    port = server["port"]
-    
-    header = create_header_panel(Text(f"Model: {model_name}\nPort: {port}", style="bold white"), "Active Server")
+    is_healthy = check_server_health(server)
+    header = render_server_dashboard(server, is_healthy)
     
     choices = [
-        ("logs", "📄  View Server Logs (less)"),
+        ("logs", "📄  View Full Server Logs (less)"),
         ("stop", "🛑  Stop Server"),
         ("back", "⬅️   Back")
     ]
     
     choice = tui_select(
-        title="Manage Active Server:",
+        title="Server Actions:",
         choices=choices,
         format_func=lambda x: x[1],
         header=header,
@@ -313,7 +311,6 @@ def action_manage_server():
         if tui_confirm("Are you sure you want to stop the server?", header=header, footer=get_system_status_footer()):
             stop_server()
             print("\n  ✔  Server stopped.")
-
             time.sleep(1)
             
     elif choice[0] == "logs":
