@@ -696,3 +696,107 @@ def test_native_chat_snapshot():
     console.print("> █") # Fake cursor
     
     assert_snapshot(console, "native_chat")
+
+
+@patch("mlx_man.server_manager.get_running_server", return_value={"model_id": "Qwen/Qwen2.5-Coder-7B-Instruct-4bit", "port": 8080})
+@patch("mlx_man.cli_dashboard.get_chip_name", return_value="Apple M-Mock")
+@patch("mlx_man.cli_dashboard.get_free_ram_gb", return_value=16.0)
+@patch("mlx_man.cli_dashboard.get_total_ram_gb", return_value=32)
+@patch("mlx_man.cli_dashboard.get_current_gpu_limit", return_value="24 GB")
+def test_main_menu_with_server_snapshot(*args):
+    from mlx_man.cli_dashboard import get_system_status_footer, get_banner
+    from mlx_man.tui_engine import build_layout
+    from rich.console import Console, Group
+    from rich.text import Text
+    from rich.panel import Panel
+    from rich import box
+    
+    console = Console(width=120, height=35, record=True, force_terminal=True, _environ={})
+    
+    header = get_banner()
+    
+    options = [
+        ("▸ 🚀  Run LLM Server", "run"),
+        ("  🟢  Active Server: Qwen2.5-Coder-7B-Instruct-4bit", "server_manage"),
+        ("  🧹  Clean Up RAM", "clean"),
+        ("  📦  Manage Models", "manage"),
+        ("  📊  Insights & History", "insights"),
+        ("  💬  Chat History", "history"),
+        ("  🔄  Sync Models", "sync"),
+        (" ──────────────────────────────────────────────── ", "sep"),
+        ("  ⏻   Exit", "exit")
+    ]
+    
+    menu_lines = []
+    for i, (label, val) in enumerate(options):
+        if i == 1:
+            t = Text(f" {label}")
+            t.pad_right(50)
+            t.stylize("bold black on white")
+            menu_lines.append(t)
+        else:
+            menu_lines.append(Text(f" {label}"))
+            
+    panel = Panel(
+        Group(*menu_lines),
+        box=box.ROUNDED,
+        border_style="bright_black",
+        width=54,
+        padding=(1, 1),
+    )
+    
+    body = Group(header, Text(""), panel, Text(""), Text("● Tip  Connect external coding tools or agents to MLX-Man's local server on port 8080", style="dim"))
+    layout = build_layout(body, get_system_status_footer(), 120, 35, shortcuts={"↑↓": "navigate", "enter": "select", "esc/q": "quit"})
+    
+    console.print(layout)
+    from test_ui_snapshots import assert_snapshot
+    assert_snapshot(console, "main_menu_with_server")
+
+@patch('mlx_man.cli_dashboard.get_chip_name', return_value="Apple M-Mock")
+@patch('mlx_man.cli_dashboard.get_free_ram_gb', return_value=16.0)
+@patch('mlx_man.cli_dashboard.get_total_ram_gb', return_value=32)
+@patch('mlx_man.cli_dashboard.get_current_gpu_limit', return_value="24 GB")
+def test_server_manage_snapshot(*args):
+    from mlx_man.cli_dashboard import get_system_status_footer
+    from mlx_man.ui_components import create_header_panel
+    from mlx_man.tui_engine import build_layout
+    from rich.console import Console, Group
+    from rich.text import Text
+    from rich.panel import Panel
+    from rich import box
+    
+    console = Console(width=120, height=35, record=True, force_terminal=True, _environ={})
+    
+    header = create_header_panel(Text("Server is running on port 8080", style="green"), "Active Server: Qwen2.5-Coder-7B-Instruct-4bit")
+    
+    options = [
+        ("📄  View Server Logs", "logs"),
+        ("🛑  Stop Server", "stop"),
+        ("↩   Back to Menu", "back")
+    ]
+    
+    menu_lines = []
+    for i, (label, val) in enumerate(options):
+        if i == 0:
+            t = Text(f" ▸ {label}")
+            t.pad_right(40)
+            t.stylize("bold black on white")
+            menu_lines.append(t)
+        else:
+            menu_lines.append(Text(f"   {label}"))
+            
+    panel = Panel(
+        Group(*menu_lines),
+        title="Server Actions",
+        box=box.ROUNDED,
+        border_style="bright_black",
+        width=46,
+        padding=(1, 1),
+    )
+    
+    body = Group(header, Text(""), panel)
+    layout = build_layout(body, get_system_status_footer(), 120, 35, shortcuts={"↑↓": "navigate", "enter": "select", "esc/q": "back"})
+    
+    console.print(layout)
+    from test_ui_snapshots import assert_snapshot
+    assert_snapshot(console, "server_manage_menu")
