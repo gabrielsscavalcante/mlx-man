@@ -143,19 +143,37 @@ MLX-Man includes a curated registry of top-performing MLX 4-bit and 6-bit quanti
 
 ---
 
-## 🛠️ Recommended Workflow: Thinker → Builder Swap
+## 🛠️ Multi-Model Agentic Pipelines (New in v1.3.0)
 
-On Macs with unified memory (e.g., 32 GB), hosting both a 32B reasoning model and a 32B coding model simultaneously would exceed available memory. MLX-Man solves this with a two-phase workflow:
+MLX-Man supports running **multiple AI models simultaneously on different ports** (e.g., `8080` and `8081`). This allows you to construct powerful dual-agent pipelines directly on your Mac, seamlessly integrating a reasoning model with a coding model.
 
 ```mermaid
 flowchart LR
-    A["Phase 1: Planning<br/>(Reasoning Model: QwQ-32B)"] -->|Generate Architecture & Prompts| B["Stop Server<br/>(Ctrl+C)"]
-    B --> C["Phase 2: Building<br/>(Coder Model: Qwen2.5-Coder-32B)"]
-    C -->|Serve via port 8080| D["External Agent / Tool<br/>(OpenCode CLI, IDE, etc.)"]
+    A["Port 8081<br/>Reasoning Model (QwQ-32B)"] -->|Plans & Formulates| B["Port 8080<br/>Builder Model (Qwen2.5-Coder)"]
+    B -->|Executes Code| C["IDE / Agent (OpenCode)"]
 ```
 
-1. **Phase 1 (Planning)**: Launch a **🧠 Reasoning** model (e.g. `QwQ-32B`). Ask it to analyze project requirements and produce a structured implementation plan.
-2. **Phase 2 (Building)**: Stop the server (`Ctrl+C`), return to the main menu, and launch a **🔨 Builder** model (e.g. `Qwen2.5-Coder-32B`) on port 8080. Connect your external tools to execute the code.
+1. **Launch Planner**: Start your **🧠 Reasoning** model (e.g., `QwQ-32B`) and assign it to port `8081`.
+2. **Launch Builder**: Start your **🔨 Builder** model (e.g., `Qwen2.5-Coder`) and assign it to port `8080`.
+3. **Execute**: Connect your agentic tools to the models to build complex, self-reasoning software.
+
+> [!WARNING]
+> Running two 32B models simultaneously requires at least 40GB+ of Unified Memory. MLX-Man's **RAM Safety Guardrails** will proactively warn you if starting a second model exceeds your Mac's available free RAM, preventing hard system swaps.
+
+---
+
+## 🛡️ Secure by Default Downloads
+
+Downloading open-source models from Hugging Face often pulls down the entire repository. This usually includes massive `.bin` (PyTorch) binaries, `.pkl` (Pickle) files, and potentially arbitrary Python scripts (`.py`).
+
+MLX-Man employs a strict **Download Allow-List** to protect your machine. When you download a model through the CLI, it forcibly restricts Hugging Face to only download verified safe formats:
+
+- `*.safetensors` (Native, secure MLX/Safetensor weights)
+- `*.json` (Configurations)
+- `*.model` / `*.tiktoken` (Tokenizers)
+- `*.txt` / `*.md` (Vocabulary and Documentation)
+
+This strict restriction saves gigabytes of bandwidth by avoiding redundant `.bin` files and guarantees that malicious executables are never saved to your filesystem.
 
 ---
 
