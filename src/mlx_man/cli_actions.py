@@ -158,6 +158,7 @@ def action_run_server():
     action_choices = [
         ("server", "Start API Server (localhost:8080)"),
         ("chat", "Chat in Terminal"),
+        ("benchmark", "⚡ Run Hardware Benchmark"),
         ("cancel", "Cancel")
     ]
 
@@ -218,6 +219,13 @@ def action_run_server():
             run_chat_session(model_id)
         except KeyboardInterrupt:
             pass
+    elif action_choice[0] == "benchmark":
+        print(f"\n  ⚡ Starting Hardware Benchmark for {model_id}...")
+        try:
+            action_run_benchmark(model_id)
+        except Exception as e:
+            print(f"\n  ❌ Benchmark failed: {e}")
+        input("\nPress Enter to return to menu...")
 
 def action_sync_models():
     """Interactive flow to sync unregistered or custom models."""
@@ -424,3 +432,88 @@ def action_quantize_model():
             header=create_warning_panel(f"An unexpected error occurred: {e}", "Error"),
             footer=footer
         )
+
+def action_run_benchmark(model_id: str):
+    import mlx_lm
+    import time
+    import json
+    import subprocess
+    from pathlib import Path
+    from datetime import datetime
+    
+    print("  [1/3] Loading model into unified memory...")
+    try:
+        model, tokenizer = mlx_lm.load(model_id)
+    except Exception as e:
+        raise RuntimeError(f"Failed to load model: {e}")
+        
+    prompt = "Write a comprehensive Python script that implements a merge sort algorithm, including detailed comments and test cases."
+    if hasattr(tokenizer, "apply_chat_template") and getattr(tokenizer, "chat_template", None):
+        try:
+            prompt = tokenizer.apply_chat_template([{"role": "user", "content": prompt}], tokenize=False, add_generation_prompt=True)
+        except Exception:
+            pass
+            
+    print("  [2/3] Warming up and generating tokens...")
+    start_time = time.time()
+    first_token_time = None
+    tokens_generated = 0
+    
+    for _ in mlx_lm.stream_generate(model, tokenizer, prompt, max_tokens=100):
+        if first_token_time is None:
+            first_token_time = time.time()
+        tokens_generated += 1
+        print("█", end="", flush=True)
+        if tokens_generated >= 50:
+            break
+            
+    print("\n  [3/3] Calculating metrics...")
+    end_time = time.time()
+    
+    if first_token_time is None or tokens_generated <= 1:
+        raise RuntimeError("Model failed to generate tokens.")
+        
+    prompt_time = first_token_time - start_time
+    gen_time = end_time - first_token_time
+    tps = (tokens_generated - 1) / gen_time if gen_time > 0 else 0.0
+    
+    # Attempt to get hardware info
+    try:
+        hw_info = subprocess.run(["sysctl", "-n", "machdep.cpu.brand_string"], capture_output=True, text=True, check=True).stdout.strip()
+        mem_bytes = int(subprocess.run(["sysctl", "-n", "hw.memsize"], capture_output=True, text=True, check=True).stdout.strip())
+        mem_gb = round(mem_bytes / (1024**3))
+        hardware_str = f"{hw_info} ({mem_gb}GB)"
+    except Exception:
+        hardware_str = "Apple Silicon Mac"
+        
+    print(f"\n  📊 Results:")
+    print(f"     - Hardware: {hardware_str}")
+    print(f"     - Time to First Token (TTFT): {prompt_time:.2f}s")
+    print(f"     - Generation Speed: {tps:.1f} tokens/sec")
+    
+    # Save to benchmarks.json
+    bench_file = Path.home() / ".config" / "mlx-man" / "benchmarks.json"
+    benchmarks = []
+    if bench_file.exists():
+        try:
+            with open(bench_file, "r") as f:
+                benchmarks = json.load(f)
+        except json.JSONDecodeError:
+            pass
+            
+    # Remove old benchmark for this model if exists
+    benchmarks = [b for b in benchmarks if b.get("model_id") != model_id]
+    
+    benchmarks.append({
+        "model_id": model_id,
+        "hardware": hardware_str,
+        "ttft_s": round(prompt_time, 2),
+        "tps": round(tps, 1),
+        "date": datetime.now().strftime("%Y-%m-%d %H:%M")
+    })
+    
+    bench_file.parent.mkdir(parents=True, exist_ok=True)
+    with open(bench_file, "w") as f:
+        json.dump(benchmarks, f, indent=4)
+        
+    print(f"\n  ✔  Benchmark saved to Leaderboard!")

@@ -447,3 +447,127 @@ def test_action_quantize_model_exception(mock_run, mock_select, mock_input):
     mock_run.side_effect = Exception("boom")
     
     action_quantize_model()
+
+@patch("mlx_lm.load")
+@patch("mlx_lm.stream_generate")
+@patch("subprocess.run")
+def test_action_run_benchmark_success(mock_sub_run, mock_stream, mock_load):
+    from mlx_man.cli_actions import action_run_benchmark
+    import time
+    
+    mock_model, mock_tokenizer = MagicMock(), MagicMock()
+    mock_tokenizer.apply_chat_template = MagicMock(return_value="formatted_prompt")
+    mock_tokenizer.chat_template = "exists"
+    mock_load.return_value = (mock_model, mock_tokenizer)
+    
+    # Simulate 50 tokens
+    def mock_stream_gen(*args, **kwargs):
+        for _ in range(50):
+            time.sleep(0.001)
+            yield "tok"
+    
+    mock_stream.side_effect = mock_stream_gen
+    
+    # Mock subprocess.run for sysctl
+    mock_proc1 = MagicMock()
+    mock_proc1.stdout = "Apple M2 Max"
+    mock_proc2 = MagicMock()
+    mock_proc2.stdout = str(32 * (1024**3))
+    mock_sub_run.side_effect = [mock_proc1, mock_proc2]
+    
+    action_run_benchmark("org/model")
+
+@patch("mlx_lm.load", side_effect=Exception("Load failed"))
+def test_action_run_benchmark_load_failure(mock_load):
+    from mlx_man.cli_actions import action_run_benchmark
+    import pytest
+    with pytest.raises(RuntimeError, match="Failed to load model"):
+        action_run_benchmark("org/model")
+
+@patch("mlx_lm.load")
+@patch("mlx_lm.stream_generate")
+def test_action_run_benchmark_no_tokens(mock_stream, mock_load):
+    from mlx_man.cli_actions import action_run_benchmark
+    import pytest
+    
+    mock_load.return_value = (MagicMock(), MagicMock())
+    
+    # Simulate 0 tokens
+    def mock_stream_gen(*args, **kwargs):
+        return []
+        yield
+    
+    mock_stream.side_effect = mock_stream_gen
+    
+    with pytest.raises(RuntimeError, match="Model failed to generate tokens."):
+        action_run_benchmark("org/model")
+
+@patch("mlx_man.cli_actions.tui_select")
+@patch("mlx_man.cli_actions.tui_text_input")
+@patch("mlx_man.cli_actions.tui_confirm")
+@patch("mlx_man.model_registry.get_models_by_role")
+@patch("mlx_man.cli_dashboard.get_free_ram_gb", return_value=32.0)
+@patch("mlx_man.cli_actions.Path.home")
+@patch("builtins.input")
+@patch("mlx_man.cli_actions.action_run_benchmark")
+def test_action_run_server_benchmark_success(mock_bench, mock_input, mock_home, mock_ram, mock_get_models, mock_confirm, mock_text, mock_select, tmp_path):
+    from mlx_man.cli_actions import action_run_server
+    mock_get_models.return_value = {"org/model": {"name": "Test", "ram_estimate_gb": 8.0}}
+    mock_select.side_effect = [("skip", ""), ("reasoning", ""), ("org/model", ""), ("benchmark", "")]
+    mock_home.return_value = tmp_path
+    
+    with patch("mlx_man.model_downloader.download_model", return_value=True):
+        with patch("mlx_man.opencode_sync.sync_opencode_config"):
+            with patch("mlx_man.usage_tracker.record_usage"):
+                action_run_server()
+                mock_bench.assert_called_once_with("org/model")
+
+@patch("mlx_man.cli_actions.tui_select")
+@patch("mlx_man.cli_actions.tui_text_input")
+@patch("mlx_man.cli_actions.tui_confirm")
+@patch("mlx_man.model_registry.get_models_by_role")
+@patch("mlx_man.cli_dashboard.get_free_ram_gb", return_value=32.0)
+@patch("mlx_man.cli_actions.Path.home")
+@patch("builtins.input")
+@patch("mlx_man.cli_actions.action_run_benchmark", side_effect=Exception("Bench Error"))
+def test_action_run_server_benchmark_fail(mock_bench, mock_input, mock_home, mock_ram, mock_get_models, mock_confirm, mock_text, mock_select, tmp_path):
+    from mlx_man.cli_actions import action_run_server
+    mock_get_models.return_value = {"org/model": {"name": "Test", "ram_estimate_gb": 8.0}}
+    mock_select.side_effect = [("skip", ""), ("reasoning", ""), ("org/model", ""), ("benchmark", "")]
+    mock_home.return_value = tmp_path
+    
+    with patch("mlx_man.model_downloader.download_model", return_value=True):
+        with patch("mlx_man.opencode_sync.sync_opencode_config"):
+            with patch("mlx_man.usage_tracker.record_usage"):
+                action_run_server()
+                mock_bench.assert_called_once_with("org/model")
+
+@patch("mlx_lm.load")
+@patch("mlx_lm.stream_generate")
+@patch("subprocess.run")
+@patch("mlx_man.cli_actions.Path.home")
+def test_action_run_benchmark_exceptions(mock_home, mock_sub_run, mock_stream, mock_load, tmp_path):
+    from mlx_man.cli_actions import action_run_benchmark
+    import time
+    
+    mock_model, mock_tokenizer = MagicMock(), MagicMock()
+    mock_tokenizer.chat_template = "exists"
+    mock_tokenizer.apply_chat_template.side_effect = Exception("Template fail")
+    mock_load.return_value = (mock_model, mock_tokenizer)
+    
+    def mock_stream_gen(*args, **kwargs):
+        for _ in range(50):
+            yield "tok"
+    
+    mock_stream.side_effect = mock_stream_gen
+    
+    mock_sub_run.side_effect = Exception("Sysctl fail")
+    
+    mock_home.return_value = tmp_path
+    bench_dir = tmp_path / ".config" / "mlx-man"
+    bench_dir.mkdir(parents=True)
+    bench_file = bench_dir / "benchmarks.json"
+    bench_file.write_text("invalid json")
+    
+    action_run_benchmark("org/model")
+

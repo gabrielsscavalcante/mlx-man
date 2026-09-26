@@ -272,11 +272,19 @@ def test_model_inspector_snapshot(m1, m2, m3, m4, m5, m6):
 @patch('mlx_man.cli_dashboard.get_free_ram_gb', return_value=16.0)
 @patch('mlx_man.cli_dashboard.get_total_ram_gb', return_value=32)
 @patch('mlx_man.cli_dashboard.get_current_gpu_limit', return_value="24 GB")
-def test_insights_snapshot(m1, m2, m3, m4):
+@patch('mlx_man.insights_view.Path.home')
+def test_insights_snapshot(mock_home, m1, m2, m3, m4, tmp_path):
     from mlx_man.cli_dashboard import get_system_status_footer
     from mlx_man.insights_view import get_insights_view, ModelInfo, get_category_color
     import datetime
     console = Console(width=120, height=45, record=True, force_terminal=True, _environ={})
+
+    import json
+    mock_home.return_value = tmp_path
+    bench_dir = tmp_path / ".config" / "mlx-man"
+    bench_dir.mkdir(parents=True)
+    with open(bench_dir / "benchmarks.json", "w") as f:
+        json.dump([{"model_id": "org/fast_model", "hardware": "Apple M-Mock", "ttft_s": 0.15, "tps": 120.5, "date": "2026-10-01 12:00"}], f)
     
     models = [
         ModelInfo(

@@ -194,3 +194,36 @@ def test_load_usage_data_bad():
 def test_load_usage_data_good():
     Path("/tmp/good.json").write_text('{"test": {"count": 1}}')
     assert load_usage_data() == {"test": {"count": 1}}
+
+@patch("mlx_man.insights_view.Path.home")
+def test_get_insights_view_with_benchmarks(mock_home, tmp_path):
+    from mlx_man.insights_view import get_insights_view
+    import json
+    
+    mock_home.return_value = tmp_path
+    bench_dir = tmp_path / ".config" / "mlx-man"
+    bench_dir.mkdir(parents=True)
+    bench_file = bench_dir / "benchmarks.json"
+    
+    bench_data = [
+        {"model_id": "org/model", "hardware": "M2 Max", "ttft_s": 0.5, "tps": 40.5, "date": "2026-09-26"}
+    ]
+    with open(bench_file, "w") as f:
+        json.dump(bench_data, f)
+        
+    group = get_insights_view([])
+    # Check that it didn't crash and returns a Group
+    assert group is not None
+
+@patch("mlx_man.insights_view.Path.home")
+def test_get_insights_view_with_benchmarks_invalid_json(mock_home, tmp_path):
+    from mlx_man.insights_view import get_insights_view
+    
+    mock_home.return_value = tmp_path
+    bench_dir = tmp_path / ".config" / "mlx-man"
+    bench_dir.mkdir(parents=True)
+    bench_file = bench_dir / "benchmarks.json"
+    bench_file.write_text("invalid json")
+        
+    group = get_insights_view([])
+    assert group is not None
