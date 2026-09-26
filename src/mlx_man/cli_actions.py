@@ -7,8 +7,13 @@ import os
 import sys
 import subprocess
 from pathlib import Path
+from rich.text import Text
+from mlx_man.ui_components import create_warning_panel
+from mlx_man.tui_engine import tui_text_input, tui_confirm
 from rich.console import Group, Console
 from rich.text import Text
+from mlx_man.ui_components import create_warning_panel
+from mlx_man.tui_engine import tui_text_input, tui_confirm
 
 from mlx_man.ui_components import create_header_panel, create_data_table, create_warning_panel
 from mlx_man.tui_engine import tui_select, tui_confirm, tui_text_input
@@ -171,12 +176,37 @@ def action_run_server():
     record_usage(model_id)
 
     if action_choice[0] == "server":
-        print(f"\n  ✔  Starting OpenAI-compatible server on http://localhost:8080 in background...")
+        from mlx_man.server_manager import get_running_servers, start_server
+        from mlx_man.cli_dashboard import get_free_ram_gb
         from mlx_man.opencode_sync import sync_opencode_config
-        from mlx_man.server_manager import start_server
         import time
+        
+        servers = get_running_servers()
+        default_port = "8080" if "8080" not in servers else "8081"
+        
+        port_str = tui_text_input(prompt=f"Enter port to run on (default: {default_port}):", header=action_header, footer=footer)
+        port = int(port_str) if port_str and port_str.isdigit() else int(default_port)
+        
+        ram_needed_str = entry.get('ram_estimate_gb', '0')
+        if isinstance(ram_needed_str, str):
+            ram_needed_str = ram_needed_str.replace('>', '').replace('<', '')
+        try:
+            ram_needed = float(ram_needed_str)
+        except:
+            ram_needed = 0
+            
+        free_ram = get_free_ram_gb()
+        if ram_needed > free_ram:
+            warn = create_warning_panel(
+                Text(f"WARNING: Model needs ~{ram_needed}GB but only {free_ram:.1f}GB is free.\nRunning this may cause severe system swapping or crashes.", style="red"),
+                "RAM Safety Alert"
+            )
+            if not tui_confirm("Are you sure you want to proceed?", header=warn, footer=footer):
+                return
+                
+        print(f"\n  ✔  Starting OpenAI-compatible server on http://localhost:{port} in background...")
         sync_opencode_config(model_id)
-        start_server(model_id)
+        start_server(model_id, port)
         time.sleep(1)
         print("\n  ℹ  Server is running in the background. You can view logs or stop it from the Main Menu.\n")
         input("Press Enter to return to menu...")
@@ -275,26 +305,28 @@ def action_sync_models():
 
 
 def action_manage_server():
-    from mlx_man.server_manager import get_running_server, stop_server, LOG_FILE, check_server_health
+    from mlx_man.server_manager import get_running_servers, stop_server, LOG_FILE
     from mlx_man.server_dashboard_view import render_server_dashboard
     from mlx_man.cli_dashboard import get_system_status_footer
     from mlx_man.tui_engine import tui_select, tui_confirm
     import subprocess
     import time
-    from rich.text import Text
     
-    server = get_running_server()
-    if not server:
+    servers = get_running_servers()
+    if not servers:
         return
         
-    is_healthy = check_server_health(server)
-    header = render_server_dashboard(server, is_healthy)
+    header = render_server_dashboard(servers)
     
-    choices = [
-        ("logs", "📄  View Full Server Logs (less)"),
-        ("stop", "🛑  Stop Server"),
-        ("back", "⬅️   Back")
-    ]
+    choices = []
+    for port in sorted(servers.keys()):
+        choices.append((f"stop_{port}", f"🛑  Stop Server on Port {port}"))
+    
+    if len(servers) > 1:
+        choices.append(("stop_all", "🛑  Stop ALL Servers"))
+        
+    choices.append(("logs", "📄  View Full Server Logs (less)"))
+    choices.append(("back", "⬅️   Back to Menu"))
     
     choice = tui_select(
         title="Server Actions:",
@@ -307,10 +339,17 @@ def action_manage_server():
     if not choice or choice[0] == "back":
         return
         
-    if choice[0] == "stop":
-        if tui_confirm("Are you sure you want to stop the server?", header=header, footer=get_system_status_footer()):
+    if choice[0] == "stop_all":
+        if tui_confirm("Are you sure you want to stop all servers?", header=header, footer=get_system_status_footer()):
             stop_server()
-            print("\n  ✔  Server stopped.")
+            print("\n  ✔  All servers stopped.")
+            time.sleep(1)
+            
+    elif choice[0].startswith("stop_"):
+        port = choice[0].split("_")[1]
+        if tui_confirm(f"Are you sure you want to stop the server on port {port}?", header=header, footer=get_system_status_footer()):
+            stop_server(port)
+            print(f"\n  ✔  Server on port {port} stopped.")
             time.sleep(1)
             
     elif choice[0] == "logs":

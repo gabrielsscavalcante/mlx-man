@@ -3,28 +3,28 @@
                                                                                                                         
                                                                                                                         
                                                                                                                         
-                                                                                                                        
-╭───────────────────────────────────────────────── Server (Port 8080) ─────────────────────────────────────────────────╮
-│ Status: 🟢 RUNNING                                                                                                   │
-│ Model: Qwen/Qwen2.5-Coder-7B-Instruct-4bit                                                                           │
-│ Port: 8080                                                                                                           │
-│ PID: 12345                                                                                                           │
-╰──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
-╭───── Combined Hardware Context ──────╮                             ╭────────────── Recent Global Logs ───────────────╮
-│ Total RAM: 32 GB                     │                             │ [INFO] API Started on 8080                      │
-│ Used RAM:  16.0 GB                   │                             │ [INFO] Model Qwen-7B loaded                     │
-│ Free RAM:  16.0 GB                   │                             ╰─────────────────────────────────────────────────╯
+╭──────────────── Server (Port 8080) ─────────────────╮ ╭───────────────────── Server (Port 8081) ─────────────────────╮
+│ Status: 🟢 RUNNING                                  │ │ Status: 🟢 RUNNING                                           │
+│ Model: mock/QwQ-32B                                 │ │ Model: mock/Qwen-Coder-7B                                    │
+│ Port: 8080                                          │ │ Port: 8081                                                   │
+│ PID: 1234                                           │ │ PID: 5678                                                    │
+╰─────────────────────────────────────────────────────╯ ╰──────────────────────────────────────────────────────────────╯
+╭───── Combined Hardware Context ──────╮                    ╭─────────────────── Recent Global Logs ───────────────────╮
+│ Total RAM: 32 GB                     │                    │ [INFO] Dual server layout initialized.                   │
+│ Used RAM:  16.0 GB                   │                    ╰──────────────────────────────────────────────────────────╯
+│ Free RAM:  16.0 GB                   │                                                                                
 │ GPU Limit: 24 GB                     │                                                                                
 ╰──────────────────────────────────────╯                                                                                
                                                                                                                         
 ╭────────────── Server Actions ──────────────╮                                                                          
 │                                            │                                                                          
-│  ▸ 📄  View Full Server Logs (less)        │                                                                          
-│    🛑  Stop Server                         │                                                                          
-│    ↩   Back to Menu                        │                                                                          
+│  ▸ 🛑  Stop Server on Port 8080            │                                                                          
+│    🛑  Stop Server on Port 8081            │                                                                          
+│    🛑  Stop ALL Servers                    │                                                                          
+│    📄  View Full Server Logs (less)        │                                                                          
+│    ⬅️   Back to Menu                       │                                                                          
 │                                            │                                                                          
 ╰────────────────────────────────────────────╯                                                                          
-                                                                                                                        
                                                                                                                         
                                                                                                                         
                                                                                                                         

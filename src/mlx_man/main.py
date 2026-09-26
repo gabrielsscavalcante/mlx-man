@@ -30,15 +30,14 @@ from mlx_man.cli_actions import (
 
 
 def get_menu_items():
-    from mlx_man.server_manager import get_running_server
+    from mlx_man.server_manager import get_running_servers
     items = [
         ("🚀  Run LLM Server",      "run"),
     ]
     
-    server = get_running_server()
-    if server:
-        model_short = server["model_id"].split("/")[-1]
-        items.append((f"🟢  Active Server: {model_short}", "server_manage"))
+    servers = get_running_servers()
+    if servers:
+        items.append((f"🟢  {len(servers)} Active Server(s) (Port {','.join(sorted(servers.keys()))})", "server_manage"))
         
     items.extend([
         ("🧹  Clean Up RAM",         "clean"),
