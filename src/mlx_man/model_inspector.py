@@ -328,11 +328,13 @@ def _model_action_menu(model: ModelMetadata):
             input("\nPress Enter to return...")
 
         elif action == "serve":
-            print("\nStarting OpenAI-compatible server on port 8080...")
-            try:
-                subprocess.run([sys.executable, "-m", "mlx_lm.server", "--model", model.repo_id, "--port", "8080"])
-            except KeyboardInterrupt:
-                print("\nServer stopped.")
+            print("\nStarting OpenAI-compatible server on port 8080 in background...")
+            from mlx_man.server_manager import start_server
+            import time
+            start_server(model.repo_id)
+            time.sleep(1)
+            print("Server is running. You can manage it from the Main Menu.\n")
+            input("Press Enter to return...")
 
         elif action == "meta":
             meta_text = Text()

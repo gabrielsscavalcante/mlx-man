@@ -171,17 +171,18 @@ def action_run_server():
     record_usage(model_id)
 
     if action_choice[0] == "server":
-        print(f"\n  ✔  Starting OpenAI-compatible server on http://localhost:8080")
-        print("  ℹ  When done, press Ctrl+C to stop.\n")
+        print(f"\n  ✔  Starting OpenAI-compatible server on http://localhost:8080 in background...")
         from mlx_man.opencode_sync import sync_opencode_config
+        from mlx_man.server_manager import start_server
+        import time
         sync_opencode_config(model_id)
-        try:
-            subprocess.run([sys.executable, "-m", "mlx_lm", "server", "--model", model_id])
-        except KeyboardInterrupt:
-            pass
+        start_server(model_id)
+        time.sleep(1)
+        print("\n  ℹ  Server is running in the background. You can view logs or stop it from the Main Menu.\n")
+        input("Press Enter to return to menu...")
     elif action_choice[0] == "chat":
         print(f"\n  ✔  Starting interactive terminal chat...")
-        print("  ℹ  Type 'quit' or 'exit' to end the session.\n")
+        print("\n  ℹ  Type 'quit' or 'exit' to end the session.\n")
         try:
             from mlx_man.native_chat_view import run_chat_session
             run_chat_session(model_id)
@@ -271,3 +272,50 @@ def action_sync_models():
                 header=create_header_panel(f"✔ Successfully synced {name}!", "Sync Complete"),
                 footer=get_system_status_footer()
             )
+
+
+def action_manage_server():
+    from mlx_man.server_manager import get_running_server, stop_server, LOG_FILE
+    from mlx_man.ui_components import create_header_panel
+    from mlx_man.cli_dashboard import get_system_status_footer
+    from mlx_man.tui_engine import tui_select, tui_confirm
+    import subprocess
+    import time
+    from rich.text import Text
+    
+    server = get_running_server()
+    if not server:
+        return
+        
+    model_name = server["model_id"].split("/")[-1]
+    port = server["port"]
+    
+    header = create_header_panel(Text(f"Model: {model_name}\nPort: {port}", style="bold white"), "Active Server")
+    
+    choices = [
+        ("logs", "📄  View Server Logs (less)"),
+        ("stop", "🛑  Stop Server"),
+        ("back", "⬅️   Back")
+    ]
+    
+    choice = tui_select(
+        title="Manage Active Server:",
+        choices=choices,
+        format_func=lambda x: x[1],
+        header=header,
+        footer=get_system_status_footer()
+    )
+    
+    if not choice or choice[0] == "back":
+        return
+        
+    if choice[0] == "stop":
+        if tui_confirm("Are you sure you want to stop the server?", header=header, footer=get_system_status_footer()):
+            stop_server()
+            print("\n  ✔  Server stopped.")
+
+            time.sleep(1)
+            
+    elif choice[0] == "logs":
+        if LOG_FILE.exists():
+            subprocess.run(["less", "+G", str(LOG_FILE)])
