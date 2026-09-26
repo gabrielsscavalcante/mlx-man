@@ -12,7 +12,7 @@ from mlx_man.chat_manager import ChatSession, save_session, load_session
 from mlx_man.tools import AVAILABLE_TOOLS
 from mlx_man.tui_engine import tui_confirm
 
-def run_chat_session(model_id: str, resume_session_id: Optional[str] = None, adapter_path: Optional[str] = None):
+def run_chat_session(model_id: str, resume_session_id: Optional[str] = None, adapter_path: Optional[str] = None, rag_index=None):
     try:
         import mlx_lm
     except ImportError:
@@ -73,7 +73,17 @@ def run_chat_session(model_id: str, resume_session_id: Optional[str] = None, ada
         if not user_input.strip():
             continue
             
-        session.messages.append({"role": "user", "content": user_input})
+        if rag_index:
+            chunks = rag_index.search(user_input, top_k=3)
+            if chunks:
+                context_str = "\n\n".join(chunks)
+                augmented_input = f"Context:\n{context_str}\n\nUser Query: {user_input}"
+                session.messages.append({"role": "user", "content": augmented_input})
+                console.print(f"[dim]🔍 Retrieved {len(chunks)} context chunks.[/dim]")
+            else:
+                session.messages.append({"role": "user", "content": user_input})
+        else:
+            session.messages.append({"role": "user", "content": user_input})
         save_session(session)
         
         while True:
