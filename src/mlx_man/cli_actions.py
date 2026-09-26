@@ -175,6 +175,18 @@ def action_run_server():
 
     from mlx_man.usage_tracker import record_usage
     record_usage(model_id)
+    
+    adapter_path = None
+    if action_choice[0] in ("server", "chat"):
+        use_lora = tui_confirm("Do you want to attach a LoRA adapter to this model?", header=action_header, footer=footer)
+        if use_lora:
+            adapter_path = tui_text_input(
+                prompt="Enter Absolute Path or HuggingFace Repo ID of the adapter:", 
+                header=action_header, 
+                footer=footer
+            )
+            if not adapter_path:
+                return
 
     if action_choice[0] == "server":
         from mlx_man.server_manager import get_running_servers, start_server
@@ -207,7 +219,7 @@ def action_run_server():
                 
         print(f"\n  ✔  Starting OpenAI-compatible server on http://localhost:{port} in background...")
         sync_opencode_config(model_id)
-        start_server(model_id, port)
+        start_server(model_id, port, adapter_path)
         time.sleep(1)
         print("\n  ℹ  Server is running in the background. You can view logs or stop it from the Main Menu.\n")
         input("Press Enter to return to menu...")
@@ -216,7 +228,7 @@ def action_run_server():
         print("\n  ℹ  Type 'quit' or 'exit' to end the session.\n")
         try:
             from mlx_man.native_chat_view import run_chat_session
-            run_chat_session(model_id)
+            run_chat_session(model_id, adapter_path=adapter_path)
         except KeyboardInterrupt:
             pass
     elif action_choice[0] == "benchmark":

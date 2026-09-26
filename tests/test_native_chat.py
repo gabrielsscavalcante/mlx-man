@@ -119,3 +119,29 @@ def test_run_chat_session_generation_interrupt(mock_save, mock_console_cls):
     saved_session = mock_save.call_args[0][0]
     assert saved_session.messages[-1]["content"] == "hi"
 
+
+@patch("mlx_lm.load")
+@patch("mlx_lm.stream_generate")
+@patch("builtins.print")
+def test_run_chat_session_with_adapter(mock_print, mock_stream, mock_load):
+    from mlx_man.native_chat_view import run_chat_session
+    mock_load.return_value = (MagicMock(), MagicMock())
+    
+    # Just to exit loop quickly
+    with patch("mlx_man.native_chat_view.Console.input", side_effect=["quit"]):
+        run_chat_session("my_model", adapter_path="my_adapter")
+        
+    mock_load.assert_called_once_with("my_model", adapter_path="my_adapter")
+
+@patch("mlx_lm.load")
+@patch("mlx_lm.stream_generate")
+@patch("builtins.print")
+def test_run_chat_session_with_adapter(mock_print, mock_stream, mock_load):
+    from mlx_man.native_chat_view import run_chat_session
+    mock_load.return_value = (MagicMock(), MagicMock())
+    
+    # Just to exit loop quickly
+    with patch("mlx_man.native_chat_view.Console.input", side_effect=["quit"]):
+        run_chat_session("my_model", adapter_path="my_adapter")
+        
+    mock_load.assert_called_once_with("my_model", adapter_path="my_adapter")
