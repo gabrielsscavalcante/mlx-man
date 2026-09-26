@@ -1,6 +1,7 @@
 import os
 import json
 import datetime
+from pathlib import Path
 from typing import List, Optional, Dict, Any
 from dataclasses import dataclass
 from rich.console import Console, Group
@@ -172,6 +173,37 @@ def get_insights_view(models: List[ModelInfo], category_filter: str = "All") -> 
                 f"{stats['size']:.1f} GB"
             )
         components.append(breakdown_table)
+
+    # 3. Hardware Benchmarks Leaderboard
+    bench_file = Path.home() / ".config" / "mlx-man" / "benchmarks.json"
+    if bench_file.exists():
+        try:
+            with open(bench_file, "r") as f:
+                benchmarks = json.load(f)
+            
+            if benchmarks:
+                bench_table = create_data_table(title="⚡ Model Speed Leaderboard", columns=[
+                    {"header": "Model", "style": "bold white"},
+                    {"header": "Hardware", "style": "dim"},
+                    {"header": "TTFT (s)", "justify": "right"},
+                    {"header": "Speed (t/s)", "justify": "right", "style": "bold green"},
+                    {"header": "Date", "style": "dim"},
+                ])
+                # Sort by fastest TTFT then highest TPS
+                sorted_bench = sorted(benchmarks, key=lambda x: (x.get("ttft_s", 999), -x.get("tps", 0)))
+                for b in sorted_bench:
+                    name = b.get("model_id", "").split("/")[-1]
+                    bench_table.add_row(
+                        name,
+                        b.get("hardware", "Unknown"),
+                        f"{b.get('ttft_s', 0):.2f}s",
+                        f"{b.get('tps', 0):.1f} t/s",
+                        b.get("date", "Unknown")
+                    )
+                components.append(Text(""))
+                components.append(bench_table)
+        except Exception:
+            pass
 
     return Group(*components)
 
