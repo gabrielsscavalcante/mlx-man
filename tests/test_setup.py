@@ -24,7 +24,7 @@ class TestPackageStructure:
     def test_version_is_current(self):
         """Version matches the expected release."""
         import mlx_man
-        assert mlx_man.__version__ == "0.4.0"
+        assert mlx_man.__version__ == "0.5.0"
 
     def test_all_modules_importable(self):
         """All package modules can be imported without errors."""
