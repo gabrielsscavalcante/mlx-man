@@ -14,7 +14,7 @@ All notable changes to the MLX-Man project.
 - **Distribution Channels** — Support for `uvx mlx-man` (zero-install instant run), `pipx install mlx-man`, and GitHub Release asset packaging.
 
 ### Changed
-- **CI Optimization** — Optimized GitHub Actions workflow to run on `ubuntu-latest`, preventing macOS runner quota exhaustion while keeping snapshot verification robust.
+- **macOS-Native CI Pipeline** — Pinned GitHub Actions test workflows (`.github/workflows/ci.yml` and `release.yml`) to `macos-latest`, ensuring tests run on genuine macOS Apple Silicon environments.
 
 ## [0.4.0] — 2026-09-25
 
