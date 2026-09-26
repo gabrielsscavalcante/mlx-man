@@ -59,4 +59,9 @@ git push origin main
 git push origin vX.Y.Z
 ```
 
-GitHub Actions will then automatically build distribution artifacts and publish the GitHub Release with attached `.whl` and `.tar.gz` files.
+GitHub Actions will automatically build distribution artifacts and publish the GitHub Release with attached `.whl` and `.tar.gz` files.
+
+Alternatively, if GitHub Actions runners are unavailable or hitting quota limits, you can publish the GitHub Release directly using the GitHub CLI:
+```bash
+gh release create vX.Y.Z dist/* --title "vX.Y.Z" --generate-notes --latest
+```

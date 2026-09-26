@@ -130,3 +130,9 @@ echo ""
 echo "👉 To publish the release to GitHub, run:"
 echo "   git push origin main"
 echo "   git push origin v$NEXT_VERSION"
+echo ""
+if command -v gh >/dev/null 2>&1; then
+    echo "💡 Or publish the GitHub Release directly with assets via GitHub CLI:"
+    echo "   gh release create v$NEXT_VERSION dist/* --title \"v$NEXT_VERSION\" --generate-notes --latest"
+fi
+
