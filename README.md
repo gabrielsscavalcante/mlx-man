@@ -47,11 +47,11 @@
 
 - **🔄 Sync & Search Hub**: Browse Hugging Face for top MLX models with real-time **Hardware Recommendations** (🟢 Great Match, 🔴 Will OOM) and sync local custom models directly into OpenCode.
 
-- **Complete Model Management**:
-  - Detailed architecture inspection (layers, heads, hidden dimensions, quantization).
-  - Accurate disk footprint calculations with Hugging Face cache scanning.
-  - In-flow Hugging Face downloads by repo ID or URL.
-  - Safe deletion with automatic orphaned blob reclamation.
+- **🗜️ Local Quantization Engine**: Convert any Hugging Face model directly on-device using Apple MLX 4-bit, 6-bit, or 8-bit quantization.
+- **⚡ On-Device Hardware Benchmarking**: Accurately measure Tokens Per Second (t/s) and Time to First Token (TTFT) on your specific M-series chip with an Insights Speed Leaderboard.
+- **🧩 LoRA Adapter Management**: Dynamically attach custom fine-tuned LoRA weights to base models for servers or terminal chat.
+- **🛠️ Agentic Native Chat**: Chat in your terminal with agentic function calling (read files, list folders, check time) with strict safety permission prompts.
+- **📚 Local RAG (Retrieval-Augmented Generation)**: Index local folders and codebases with zero heavy vector database dependencies, dynamically augmenting context for local LLMs.
 - **OpenAI-Compatible Local Server**: Run any model as an API endpoint on `localhost:8080` with native Apple Silicon MLX GPU acceleration.
 
 ---
@@ -67,34 +67,40 @@
 
 ---
 
-## 🚀 Quick Start
+## 🚀 Quick Start & Installation
 
-### 1. Clone the Repository
+You can run or install MLX-Man using any of the following methods:
 
+### Option 1: Instant Run with `uvx` (Recommended — No Install Required)
+If you have [uv](https://github.com/astral-sh/uv) installed, you can launch MLX-Man directly without cloning:
 ```bash
+uvx mlx-man
+```
+
+### Option 2: Isolated Global Install with `pipx`
+Install MLX-Man globally in an isolated virtual environment:
+```bash
+pipx install mlx-man
+mlx-man
+```
+
+### Option 3: Local Clone & Development Setup
+```bash
+# 1. Clone repository
 git clone https://github.com/gabrielsscavalcante/mlx-man.git
 cd mlx-man
-```
 
-### 2. Install MLX-Man
-
-**Using [uv](https://github.com/astral-sh/uv)** (recommended — faster):
-```bash
+# 2. Setup environment with uv (faster)
 uv venv
 source .venv/bin/activate
-uv pip install -e .
-```
+uv pip install -e ".[dev]"
 
-**Using standard pip:**
-```bash
+# Or using standard pip:
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -e .
-```
+pip install -e ".[dev]"
 
-### 3. Launch MLX-Man
-
-```bash
+# 3. Launch
 mlx-man
 ```
 
