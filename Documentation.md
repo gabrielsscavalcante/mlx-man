@@ -118,6 +118,42 @@ When you select "Start API Server", the model hosts an OpenAI-compatible endpoin
 
 Just open a new terminal tab and run `opencode` while the server is running.
 
+### [4] Run Benchmark
+Benchmark any installed model on-device to measure real-world Tokens Per Second (t/s) and Time to First Token (TTFT) on your specific Apple Silicon chip. Results are automatically recorded and displayed on the Insights Speed Leaderboard.
+
+### [5] Quantize Model
+Compress and convert any standard Hugging Face model directly on-device using MLX quantization (4-bit, 6-bit, or 8-bit), optimizing it for your available RAM.
+
+### [6] Native Chat (Agentic & RAG)
+Interactive terminal chat with full local history:
+- **Agentic Mode**: The model can use built-in tools (`read_file`, `list_directory`, `get_time`) to examine your workspace, always gated by an explicit security permission prompt (`Allow? [Y/n]`).
+- **Local RAG Mode**: Index local folders and codebases with zero external vector database dependencies to automatically inject relevant file chunks into conversation context.
+- **LoRA Adapter Support**: Attach custom fine-tuned weights directly when launching chat or servers.
+
+---
+
+## Release & Distribution Guide
+
+MLX-Man uses standard Semantic Versioning (`vMAJOR.MINOR.PATCH`) and automated release delivery:
+
+### 1. Release Automation (`scripts/release.sh`)
+Releases must be cut exclusively on the `main` branch with clean working trees:
+```bash
+# Validate, bump version, run tests, and create git tag:
+./scripts/release.sh patch   # or minor, major, or specific version x.y.z
+```
+
+### 2. GitHub Release Delivery (`.github/workflows/release.yml`)
+When a tag (e.g. `v0.5.0`) is pushed to GitHub:
+1. GitHub Actions runs verification on Python 3.12.
+2. Builds the source distribution (`.tar.gz`) and binary wheel (`.whl`).
+3. Publishes an official GitHub Release with release notes and downloadable assets.
+
+### 3. User Installation Channels
+- **Instant (zero install)**: `uvx mlx-man`
+- **Global isolated install**: `pipx install mlx-man`
+- **Local editable install**: `pip install -e '.[dev]'`
+
 ---
 
 ## Project Structure
@@ -127,35 +163,41 @@ mlx-man/
 ├── pyproject.toml            # Modern Python packaging configuration (Hatchling)
 ├── Makefile                  # Developer workflow targets (install, test, lint, run)
 ├── start_llm.sh              # Shell launcher script (resolves Python & .venv)
+├── scripts/
+│   └── release.sh            # Automated release & tagging script
 ├── Documentation.md          # In-depth architectural & usage documentation
 ├── CONTRIBUTING.md           # Contributor guidelines
 ├── CHANGELOG.md              # Version history
 ├── LICENSE                   # MIT License
 ├── src/
 │   └── mlx_man/
-│       ├── __init__.py       # Package definition & centralized version string
-│       ├── __main__.py       # Support for `python -m mlx_man` execution
+│       ├── __init__.py       # Centralized package version string
+│       ├── __main__.py       # Direct execution via `python -m mlx_man`
 │       ├── main.py           # Main CLI loop & alternate screen buffer
-│       ├── cli_select.py     # Spotlight-style centered selector & keypress engine
-│       ├── cli_layout.py     # Dynamic terminal centering & persistent footer
-│       ├── cli_dashboard.py  # ASCII logo, hardware detection, & rotating tips
-│       ├── cli_actions.py    # Subsystem action handlers (direct function calls)
-│       ├── model_registry.py # Curated model knowledge base (roles, specs, metadata)
+│       ├── tui_engine.py     # Spotlight-style raw terminal TUI engine
+│       ├── cli_dashboard.py  # Hardware detection, status badges, & rotating tips
+│       ├── cli_actions.py    # Subsystem action handlers (quantize, benchmark, chat)
+│       ├── model_registry.py # Single source of truth for models & roles
 │       ├── model_manager.py  # HF cache scanner, size calculator, safe deleter
-│       ├── model_inspector.py # Model browser, technical spec cards, downloader
-│       ├── model_downloader.py # Dedicated Hugging Face model downloader
+│       ├── model_inspector.py # Model browser, spec cards, downloader
+│       ├── model_downloader.py # Dedicated secure Hugging Face downloader
+│       ├── rag_engine.py     # Pure-Python zero-dependency BM25 RAG indexer
+│       ├── tools.py          # Safe read-only agentic tools for native chat
+│       ├── native_chat_view.py # Terminal chat, agentic loop, and RAG integration
+│       ├── server_manager.py # Background multi-server lifecycle manager
+│       ├── server_dashboard_view.py # Multi-server monitoring dashboard
 │       ├── process_service.py # Process monitoring service for RAM management
 │       ├── ram_manager_view.py # Memory cleaner UI with process termination
 │       ├── usage_tracker.py  # Local usage recording and session statistics
-│       ├── insights_view.py  # Historical usage analytics dashboard
-│       └── opencode_sync.py  # OpenCode CLI configuration sync
+│       └── insights_view.py  # Historical analytics & Benchmark Speed Leaderboard
 └── tests/
     ├── conftest.py           # Shared test fixtures & mocks
     ├── test_setup.py         # Packaging, importability, & XDG compliance tests
-    ├── test_cli.py           # CLI routing & rendering assertions
-    ├── test_ram_cleaner.py   # Process discovery & termination mock tests
-    ├── test_models_view.py   # Model manager & inspector view tests
-    └── test_insights.py      # Usage tracking & analytics tests
+    ├── test_tools.py         # Agentic tools unit tests
+    ├── test_rag_engine.py    # BM25 RAG indexer tests
+    ├── test_server_manager.py # Multi-server lifecycle tests
+    ├── test_ui_snapshots.py  # 15 Rich console UI snapshot tests
+    └── ...                   # Full 320-test 100% coverage suite
 ```
 
 ---

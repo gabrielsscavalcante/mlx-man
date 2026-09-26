@@ -2,6 +2,20 @@
 
 All notable changes to the MLX-Man project.
 
+## [0.5.0] — 2026-09-26
+
+### Added
+- **Local Model Quantization Engine** — Convert any Hugging Face model directly on-device using MLX quantization (4-bit, 6-bit, 8-bit).
+- **On-Device Hardware Benchmarking** — Measure Tokens Per Second (t/s) and Time to First Token (TTFT) on Apple Silicon, with an Insights Speed Leaderboard.
+- **LoRA Adapter Management** — Dynamically attach custom fine-tuned LoRA weights when launching local API servers or native terminal chats.
+- **Agentic Native Chat** — Interactive terminal chat with autonomous tool use (`read_file`, `list_directory`, `get_time`) gated by explicit safety permission prompts.
+- **Local RAG (Retrieval-Augmented Generation)** — Index local folders and codebases with zero external vector DB dependencies to dynamically augment context.
+- **Release Automation Pipeline** — Added GitHub Actions release delivery workflow (`.github/workflows/release.yml`) and automated release helper script (`scripts/release.sh`).
+- **Distribution Channels** — Support for `uvx mlx-man` (zero-install instant run), `pipx install mlx-man`, and GitHub Release asset packaging.
+
+### Changed
+- **CI Optimization** — Optimized GitHub Actions workflow to run on `ubuntu-latest`, preventing macOS runner quota exhaustion while keeping snapshot verification robust.
+
 ## [0.4.0] — 2026-09-25
 
 ### Added
